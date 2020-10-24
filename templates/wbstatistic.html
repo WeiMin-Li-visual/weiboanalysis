@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../static/layui/css/layui.css">
+</head>
+<body style="height: 100%; margin: 0">
+<div id="container1" style="height: 70%">
+	<div id="chart1" style="width: 50%; height: 100%; float: left;">chart1</div>
+	<div id="chart2" style="width: 50%; height: 100%; float: left;">chart2</div>
+</div>
+<div id="container2" style="height: 50%">
+	<div id="chart3" style="width: 50%; height: 100%; float: left;">chart3</div>
+	<div id="chart4" style="width: 50%; height: 100%; float: left;">chart4</div>
+</div>
+<script type="text/javascript" src="/static/js/echarts.js"></script>
+<script type="text/javascript">
+
+	var data = {{ data_json | tojson}};   //接收来自后端的数据
+	data = JSON.parse(data);              //将数据解析为json格式
+    var source = data.source;
+	var src_rate = source.src_rate;
+	
+	var dom = document.getElementById("chart1");   //获取要加入内容的容器
+    var myChart = echarts.init(dom);
+	option = {
+	    tooltip: {},
+	    title: [{
+	        text: '微博来源',
+	        subtext: '总计 ' + source.num_wb,
+	        left: '25%',
+	        textAlign: 'center'
+	    }, {
+	        text: '比率',
+	        left: '75%',
+	        textAlign: 'center'
+	    }],
+	    grid: [{
+//	        top: 50,
+//	        width: '50%',
+	        bottom: '1%',
+	        left: 10,
+	        containLabel: true
+	    }],
+	    xAxis: [{
+	        type: 'value',
+	        max: source.num_wb*0.5,
+	        splitLine: {
+	            show: false
+	        }
+	    }],
+	    yAxis: [{
+	        type: 'category',
+	        data: Object.keys(source.src_count),
+	        axisLabel: {
+	            interval: 0,
+	            rotate: 30
+	        },
+	        splitLine: {
+	            show: false
+	        }
+	    }],
+	    series: [{
+	        type: 'bar',
+	        stack: 'chart',
+	        z: 3,
+	        label: {
+	            normal: {
+	                position: 'right',
+	                show: true
+	            }
+	        },
+	        data: Object.keys(source.src_count).map(function (key) {
+	            return source.src_count[key];
+	        })
+	    }, {
+	        type: 'bar',
+	        stack: 'chart',
+	        silent: true,
+	        itemStyle: {
+	            normal: {
+	                color: '#eee'
+	            }
+	        },
+	        data: Object.keys(source.src_count).map(function (key) {
+	            return source.num_wb*0.5 - source.src_count[key];
+	        })
+	    }, {
+	        type: 'pie',
+	        radius: [0, '40%'],
+	        center: ['75%', '35%'],
+	        data: Object.keys(src_rate).map(function (key) {
+	            return {
+	                name: key.replace('.js', ''),
+	                value: src_rate[key]*100
+	            }
+	        })
+	    }]
+	};
+	myChart.setOption(option)   //根据option里的内容展示图表
+	
+</script>
+</body>
+</html>
