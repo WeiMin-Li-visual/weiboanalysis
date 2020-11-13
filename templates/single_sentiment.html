@@ -43,16 +43,18 @@
     layui.use('layer',function(){
         var layer=layui.layer;
         if(content_err===1) {
-            senti_other=toDecimal(1-senti_value)
-            diff=senti_value-senti_other
-            if(Math.abs(diff)<=0.08) {
+            // senti_other=toDecimal(1-senti_value)
+            // diff=senti_value-senti_other
+            // if(Math.abs(diff)<=0.1)
+            if(senti_value<0.57 && senti_value>=0.5)
+            {
                 layer.msg('该文本情感倾向偏向中性')
             }
-            if(diff>0.1)
+            if(senti_value>=0.57)
                  {
                     layer.msg('该文本情感倾向偏向积极倾向')
                  }
-            if(diff<-0.1){
+            if(senti_value<0.5){
                      layer.msg('该文本情感倾向偏向消极倾向')
                  }
             option = {
@@ -77,7 +79,7 @@
                     center: ['50%', '40%'],
                     data: [
                         {value: senti_value, name: '积极情绪'},
-                        {value: senti_other, name: '消极情绪'},
+                        {value: toDecimal(1-senti_value), name: '消极情绪'},
                     ],
                     emphasis: {
                         itemStyle: {

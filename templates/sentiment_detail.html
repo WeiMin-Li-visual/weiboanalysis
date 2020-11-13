@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../static/layui/css/layui.css" media="all">
+    <style>
+    </style>
+</head>
+<body style="height: 100%;margin: 0">
+    <div id="" style="width: 100%; height: 2%;"></div>
+    <div id="container1" style="width:50%;height:100%;float:left;">
+        <div id="" style="width: 100%; height: 2%; float:left;font-size:15px;text-align:center">根据时间进行情感详细分析</div><br>
+        <div id="chart1" style="width: 100%; height: 63%; float: left;"></div>
+        <div id="chart2" style="width: 45%; height: 40%; float: left;"></div>
+        <img src="../static/image/blank.png" style='width: 55%; height: 40%; float:left;' id="dataimg"/>
+    </div>
+    <div id="container2" style="width:50%;height: 100%;float:left;">
+        <div id="" style="width: 100%; height: 2%; float:left;font-size:15px;text-align:center">根据地域进行情感详细分析</div><br><br>
+        <div id="provincemap" style="width: 95%; height: 60%; float: left;"></div>
+        <div id="chart3" style="width: 45%; height: 40%; float: left;"></div>
+        <img src="../static/image/blank.png" style='width: 55%; height: 40%; float:left;' id="dataimg2"/>
+    </div>
+<script src="../static/layui/layui.js"></script>
+<script type="text/javascript" src="/static/js/echarts.js"></script>
+<script type="text/javascript" src="/static/js/function.js"></script>
+<script type="text/javascript" src="/static/js/echarts.min.js"></script>
+<script type="text/javascript">
+    var myChart1=echarts.init(document.getElementById('chart1'));//加入内容的容器
+    var myChart2 = echarts.init(document.getElementById('chart2'));
+    var user_time_senticount=JSON.parse({{user_time_senticount|tojson}});//用户微博情感极性
+    var user_timeciyun_path=JSON.parse({{user_timeciyun_path|tojson}});
+
+    var text_count=[];
+    for (var i = 0; i < user_time_senticount.length; i++) {
+            count=0
+            // for (var j=0; j < user_time_senticount[i].length;j++){
+            count= user_time_senticount[i][0]+user_time_senticount[i][1]+user_time_senticount[i][2]
+            // }
+            text_count.push(count)
+    }
+
+    var option1 = {
+        tooltip: {
+                trigger: 'item',
+                formatter: '微博总数：{c} '
+            },
+        xAxis: {
+            type: 'category',
+            data: ['2010','2011','2012', '2013', '2014', '2015', '2016','2017','2018','2019','2020']
+        },
+        yAxis: {
+            type: 'value'
+        },
+        series: [{
+
+            data: text_count,
+            type: 'line',
+            symbol: 'triangle',
+            symbolSize: 15,
+            lineStyle: {
+                color: 'green',
+                width: 3,
+                type: 'dashed'
+            },
+            itemStyle: {
+                borderWidth: 2,
+                borderColor: 'yellow',
+                color: 'red'
+            }
+        }]
+    };
+    myChart1.setOption(option1)
+    myChart1.on('click', function (params) {
+        var count=parseInt(encodeURIComponent(params.name))-2010;
+        myChart2.setOption({
+             tooltip: {
+                trigger: 'item',
+                formatter: '{a} <br/>{b}: {c} ({d}%)'
+            },
+            legend: {
+                orient: 'horizontal',
+                center: 10,
+                data: ['积极','中性','消极']
+            },
+            series: [
+                {
+                    name: '情感态度',
+                    type: 'pie',
+                    radius: ['50%', '80%'],
+                    avoidLabelOverlap: false,
+                    label: {
+                        show: false,
+                        position: 'center'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: '30',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    data: [
+                        {value:user_time_senticount[count][0], name: '积极'},
+                        {value: user_time_senticount[count][1], name: '中性'},
+                        {value: user_time_senticount[count][2], name: '消极'},
+                        ]
+                    }
+                ]
+        });
+        // 展示时间词云图
+        var path=user_timeciyun_path+'/'+encodeURIComponent(params.name)+'_wc.png';
+        document.getElementById("dataimg").src=path;
+});
+</script>
+<script type="text/javascript" src="/static/js/china.js"></script>
+
+<script type="text/javascript">
+       var myChart = echarts.init(document.getElementById('provincemap'));
+       var myChart3 = echarts.init(document.getElementById('chart3'));
+       var user_position_senticount=JSON.parse({{user_position_senticount|tojson}});//用户微博情感极性
+       var user_positionciyun_path=JSON.parse({{user_positionciyun_path|tojson}});
+       var text_count_position=[]
+        for (var i = 0; i < user_position_senticount.length; i++) {
+            countp=0
+            countp= user_position_senticount[i][1]+user_position_senticount[i][2]+user_position_senticount[i][3]
+            text_count_position.push(countp)
+        }
+        var mydata = [
+            {name: '黑龙江',value:text_count_position[0]},{name: '北京',value:text_count_position[1]},
+            {name: '辽宁',value:text_count_position[2]},{name: '内蒙古',value:text_count_position[3]},
+            {name: '香港',value:text_count_position[4]},{name: '天津',value:text_count_position[5]},
+            {name: '云南',value:text_count_position[6]},{name: '湖南',value:text_count_position[7]},
+            {name: '河南',value:text_count_position[8]},{name: '山东',value:text_count_position[9]},
+            {name: '西藏',value:text_count_position[10]},{name: '广西',value:text_count_position[11]},
+            {name: '山西',value:text_count_position[12]},{name: '台湾',value:text_count_position[13]},
+            {name: '新疆',value:text_count_position[14]},{name: '江西',value:text_count_position[15]},
+            {name: '吉林',value:text_count_position[16]},{name: '河北',value:text_count_position[17]},
+            {name: '四川',value:text_count_position[18]},{name: '甘肃',value:text_count_position[19]},
+            {name: '福建',value:text_count_position[20]},{name: '广东',value:text_count_position[21]},
+            {name: '安徽',value:text_count_position[22]},{name: '浙江',value:text_count_position[23]},
+            {name: '上海',value:text_count_position[24]},{name: '陕西',value:text_count_position[25]},
+            {name: '澳门',value:text_count_position[26]},{name: '海外',value:text_count_position[27]},
+            {name: '江苏',value:text_count_position[28]},{name: '湖北',value:text_count_position[29]},
+            {name: '海南',value:text_count_position[30]},{name: '贵州',value:text_count_position[31]},
+            {name: '重庆',value:text_count_position[32]},{name: '其他',value:text_count_position[33]},
+            {name: '青海',value:text_count_position[34]},{name: '宁夏',value:text_count_position[35]},
+            {name: '南海诸岛',value:0},
+        ];
+        var optionMap = {
+            backgroundColor: '#ffffff',
+            tooltip: {
+                     trigger: 'item',
+                    formatter:function(params){
+                        return params.seriesName+'<br />'+params.name+'：'+params.value
+                    }//数据格式化
+                },
+               // 左侧小导航图标
+            visualMap: {
+                show:true,
+                type: 'continuous',
+                min: 0,
+                max: 4000,
+                left: 'right',
+                top: 'bottom',
+                text: ['高','低'],//取值范围的文字
+                inRange: {
+                        color: ['#e0ffff', '#27c1cf']//取值范围的颜色
+                },
+                formatter: function (params) { //标签的格式化工具。
+                    return parseInt(params); // 范围标签显示内容。
+}
+            },
+
+            geo: {
+                map: 'china',
+                roam: true,//开启缩放和平移
+                zoom: 1.23,//视角缩放比例，最佳比例在1.23
+                label: {
+                    normal: {
+                        show: true,
+                        fontSize:'10',
+                        color: 'rgba(0,0,0,0.7)'
+                    }
+                },
+                itemStyle: {
+                    normal:{
+                        borderColor: 'rgba(0, 0, 0, 0.2)'
+                    },
+                    emphasis:{
+                        areaColor: '#F3B329',//鼠标选择区域颜色
+                        shadowOffsetX: 0,
+                        shadowOffsetY: 0,
+                        shadowBlur: 20,
+                        borderWidth: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                },
+                // 隐藏南海诸岛功能
+                regions: [
+                  {
+                    name: "南海诸岛",
+                    itemStyle: {// 隐藏地图
+                      normal: {
+                        opacity: 1,//设置为0时则隐藏南海诸岛功能
+                        }
+                    },
+                    label: {
+                      show: true // 隐藏文字
+                        }
+                      }
+                    ],
+                },
+                series : [
+                    {
+                        name: '微博总数',
+                        type: 'map',
+                        geoIndex: 0,
+                        data:mydata
+                    }
+                ]
+            };
+       myChart.setOption(optionMap);
+       myChart.on('click', function (params) {
+           var provincename=params.name;
+           // 展示时间词云图
+           var path_p=user_positionciyun_path+'/'+provincename+'_wc.png';
+           // document.write(provincename)
+           if (provincename==='黑龙江'){
+               path_p=user_positionciyun_path+'/黑龙_wc.png';
+           }
+           if (provincename==='内蒙古'){
+               path_p=user_positionciyun_path+'/内蒙_wc.png';
+           }
+           if  (provincename==='南海诸岛') {
+               path_p = './static/image/blank.png';
+           }
+           document.getElementById("dataimg2").src=path_p;
+           for (var b=0;b < user_position_senticount.length;b++){
+               if (user_position_senticount[b][0] === provincename && provincename !== '南海诸岛'){
+                   myChart3.setOption({
+                     tooltip: {
+                        trigger: 'item',
+                        formatter: '{a} <br/>{b}: {c} ({d}%)'
+                    },
+                    legend: {
+                        orient: 'horizontal',
+                        center: 10,
+                        data: ['积极','中性','消极']
+                    },
+                    series: [
+                        {
+                            name: '情感态度',
+                            type: 'pie',
+                            radius: ['50%', '80%'],
+                            avoidLabelOverlap: false,
+                            label: {
+                                show: false,
+                                position: 'center'
+                            },
+                            emphasis: {
+                                label: {
+                                    show: true,
+                                    fontSize: '30',
+                                    fontWeight: 'bold'
+                                }
+                            },
+                            labelLine: {
+                                show: false
+                            },
+                            data: [
+                                {value:user_position_senticount[b][1], name: '积极'},
+                                {value: user_position_senticount[b][2], name: '中性'},
+                                {value: user_position_senticount[b][3], name: '消极'},
+                                ]
+                            }
+                        ]
+                });
+               }
+           }
+       });
+</script>
+</body>
+</html>

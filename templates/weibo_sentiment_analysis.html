@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../static/layui/css/layui.css" media="all">
+    <style>
+    </style>
+</head>
+<body style="height: 100%;margin: 0">
+    <div id="container1" style="width:70%;height: 50%;float:left;">
+		<div id="text" style="width: 100%; height: 5%; float:top;font-size:12px;text-align:right;color: crimson"></div>
+        <div id="text2" style="width: 100%; height: 5%; float:left;font-size:15px;text-align:center">省份微博用户数目统计</div>
+        <div id="chart1" style="width: 100%; height: 100%; float:left;"></div>
+        <div id="text1" style="width: 45%; height: 10%; float:left;font-size:15px;text-align:center">所有用户极性统计</div>
+        <div id="text0" style="width: 46%; height: 10%; float:left;font-size:15px;text-align:center">所有用户词云显示</div>
+        <div id="chart0" style="width: 45%; height: 75%; float:left;"></div>
+        <div id="dataImage0" style="width: 55%; height: 80%; float:left;">
+	        <img src="{{user_ciyun_path}}" style="width:80%;height:100%;float: left" />
+        </div>
+    </div>
+    <div id="container2" style="width:30%;height: 100%;float:left;">
+        <div id="" style="width: 100%; height: 5%"></div>
+        <div class="content-inner">
+            <div class="figure-title" style="font-size: 15px; height:30%;" ><h4>正面微博展示</h4></div>
+				<div class="figure-content" id="positive" style="width:95%;border:2px dotted #FF5722;color: #0C0C0C">
+					<ul class="category">
+						<li id="pos0">1.哈哈哈看看这金毛是如何贿赂主人的，说好的不能成精的呢 网页链接 @可爱萌宠物中心</li><br>
+						<li id="pos1">2.一样的外卖小哥哈哈哈我真的要被笑死了</li><br>
+						<li id="pos2">3.#董力[超话]##浪漫七夕# ，今天是七夕节[心][心][心]
+祝阳光少年@董力 及所有水动力七夕 节快乐[太开心][太开心][太开心][米奇比心][米奇比心][米奇比心] ​​​</li><br>
+					</ul>
+				</div><br>
+            <div class="figure-title" style="font-size: 15px; height:30%" ><h4>中性微博展示</h4></div>
+				<div class="figure-content" id="neural" style="width:95%;border:2px dotted #8D8D8D;color: #0C0C0C">
+					<ul class="category">
+						<li id="neu0">1.【指甲健康】健康的指甲是粉红色的，因为有充足的血液供应。若指甲变化异常，往往是营养缺乏或其他潜在症状造成的。而高蛋白饮食是维持健康指甲所必需的，鸡蛋则是 [月亮] 获得蛋白质的良好来源。 ​​​</li><br>
+						<li id="neu1">2. 减肥动作：1.两手撑地，双腿并拢伸直，前脚掌撑地，手臂伸直，腰背 [话筒] 挺直。 ​​​</li><br>
+					</ul>
+				</div><br>
+            <div class="figure-title" style="font-size: 15px; height:30%" ><h4>负面微博展示</h4></div>
+				<div class="figure-content" id="negative" style="width:95%;border:2px dotted #007DDB;color: #0C0C0C">
+					<ul class="category">
+						<li id="neg0">1.残留下的只有回忆，只能坚强去忘记#陈晓##房子里的故事# </li><br>
+						<li id="neg1">2.决定了人生的痛苦：人类从来都是向往得不到的东西。社会在发展。千万别太着急……如果你失去了耐心。</li><br>
+						<li id="neg2">3.任何丈夫、已忍无可忍......：实在感到头疼！——卡耐基夫人！对那因疲劳过度而毫无生气的妻子、都比较喜欢精神饱满的妻子……一忍再忍 德州·德州第一中学</li>
+					</ul>
+				</div>
+			</div>
+    </div>
+<script src="../static/layui/layui.js"></script>
+<script type="text/javascript" src="/static/js/echarts.js"></script>
+<script type="text/javascript" src="/static/js/function.js"></script>
+<script type="text/javascript">
+
+   var myChart0=echarts.init(document.getElementById('chart0'));//加入内容的容器
+   var user_text_count=JSON.parse({{user_text_count|tojson}});//用户微博情感极性
+   var option0 = {
+    tooltip: {
+        trigger: 'item',
+        formatter: '{a} <br/>{b}: {c} ({d}%)'
+    },
+    legend: {
+        orient: 'vertical',
+        left: 10,
+        data: ['积极','中性','消极']
+    },
+    series: [
+        {
+            name: '情感态度',
+            type: 'pie',
+            radius: ['70%', '100%'],
+            avoidLabelOverlap: false,
+            label: {
+                show: false,
+                position: 'center'
+            },
+            emphasis: {
+                label: {
+                    show: true,
+                    fontSize: '30',
+                    fontWeight: 'bold'
+                }
+            },
+            labelLine: {
+                show: false
+            },
+            data: [
+                {value: user_text_count[0], name: '积极'},
+                {value: user_text_count[1], name: '中性'},
+                {value: user_text_count[2], name: '消极'},
+                ]
+            }
+        ]
+    };
+
+   myChart0.setOption(option0)
+
+
+    var myChart1 = echarts.init(document.getElementById("chart1"));//获取要加入内容的容器
+    var user_position=JSON.parse({{user_position|tojson}});//中文数据要先用json解析得到
+    var user_position_c={{user_position_c}};
+    var dataAxis =user_position
+    var data=user_position_c
+    var yMax = 1000;
+    var dataShadow = [];
+    for (var i = 0; i < data.length; i++) {
+            dataShadow.push(yMax);
+    }
+    var option1 = {
+        tooltip: {
+            trigger: 'item',
+            formatter: '{a} <br/>{b}: {c}人 '
+        },
+            xAxis: {
+                data: dataAxis,
+                axisLabel: {
+                    inside: false,
+                    textStyle: {
+                        color: '#120d0d'
+                    }
+                },
+                axisTick: {
+                    show: false
+                },
+                axisLine: {
+                    show: false
+                },
+                z: 10
+            },
+            yAxis: {
+                axisLine: {
+                    show: false
+                },
+                axisTick: {
+                    show: false
+                },
+                axisLabel: {
+                    textStyle: {
+                        color: '#999'
+                    }
+                }
+            },
+            dataZoom: [
+                {
+                    type: 'inside'
+                }
+            ],
+            series: [
+
+                { // For shadow
+					name: '上限',
+                    type: 'bar',
+                    itemStyle: {
+                        color: 'rgba(0,0,0,0.05)'
+                    },
+                    barGap: '-100%',
+                    barCategoryGap: '20%',
+                    data: dataShadow,
+                    animation: false
+                },
+                {
+                	name: '省份人数',
+                    type: 'bar',
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(
+                            0, 0, 0, 1,
+                            [
+                                {offset: 0, color: '#f68396'},
+                                {offset: 0.5, color: '#f0c518'},
+                                {offset: 1, color: '#188df0'}
+                            ]
+                        )
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            color: new echarts.graphic.LinearGradient(
+                                0, 0, 0, 1,
+                                [
+                                    {offset: 0, color: '#db0a3e'},
+                                    {offset: 0.7, color: '#cc2f70'},
+                                    {offset: 1, color: '#b2686d'}
+                                ]
+                            )
+                        }
+                    },
+                    data: data
+                }
+            ]
+        };
+    var zoomSize = 6;
+        myChart1.on('click', function (params) {
+            console.log(dataAxis[Math.max(params.dataIndex - zoomSize / 2, 0)]);
+            myChart1.dispatchAction({
+                type: 'dataZoom',
+                startValue: dataAxis[Math.max(params.dataIndex - zoomSize / 2, 0)],
+                endValue: dataAxis[Math.min(params.dataIndex + zoomSize / 2, data.length - 1)]
+            });
+        });
+    myChart1.setOption(option1)   //根据option里的内容展示图表
+
+</script>
+</body>
+</html>
