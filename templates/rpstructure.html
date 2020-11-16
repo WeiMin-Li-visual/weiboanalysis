@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="height: 100%; margin: 0">
+<div id="container" style="height: 100%"></div>
+<script type="text/javascript" src="/static/js/echarts.js"></script>
+<script type="text/javascript">
+
+    var data = {{ data_json | tojson}};   //接收来自后端的数据
+	data = JSON.parse(data);              //将数据解析为json格式
+    var dom = document.getElementById("container");
+    var myChart = echarts.init(dom);
+    var num_category = data.num_category; //节点类别个数
+    var graph = data.graph_data;          //获取后端返回的图数据
+    graph = init_graph(graph);  		  //初始化图数据
+    var option = init_option(graph,num_category);	 //初始化属性
+    myChart.setOption(option);			  //执行该语句就可以根据option的设置展示图
+    
+    //微博转发结构动态展示
+    graph.nodes.forEach(function (node) {
+	        node.itemStyle.opacity = 0.1;  //初始时刻将所有节点的不透明度设为0.5
+	    });
+	graph.nodes[0].itemStyle.opacity = 1; //源微博节点不透明度设为1
+	myChart.setOption({
+    	series:[{
+               data:graph.nodes,
+               links:graph.links
+           }]
+    });
+    var rp_records = data.rp_records;     //不同时间段内的微博转发记录
+    var rec_index = 0;					  //当前记录下标
+    interval_no = setInterval(function(){
+    	var time = rp_records[rec_index].time;               // 当前时间
+    	var post_indexs = rp_records[rec_index].post_indexs; // 当前时间段内转发微博的编号
+    	post_indexs.forEach(function(node_index){
+    		graph.nodes[node_index].itemStyle.opacity = 1;   // 将当前时间段内的转发微博的不透明度设为1
+    		graph.nodes[node_index].symbolSize+=10;
+    	});
+    	myChart.setOption({
+    		title:{
+                	text : time+'的转发微博'
+           	},
+	    	series:[{
+	               data:graph.nodes,
+	               links:graph.links
+	        }]
+    	});
+    	//节点大小还原
+    	post_indexs.forEach(function(node_index){
+    		graph.nodes[node_index].symbolSize-=10;
+    	});
+    	rec_index+=1;
+    	if(rec_index == rp_records.length){   //到达最后一个时间片，退出循环
+    		myChart.setOption({
+    			title:{
+                	text : '展示完毕！'
+           		},
+		    	series:[{
+		               data:graph.nodes,
+		               links:graph.links
+		        }]
+	    	});
+    		clearInterval(interval_no);
+    	};
+    }, 1500);
+    console.log(rp_records);
+    console.log(graph.nodes[0]);
+    
+    
+
+
+
+
+    //函数区域
+    function init_graph(graph){
+	    //给节点的属性进行操作
+	    graph.nodes.forEach(function (node) {
+	        node.itemStyle = {opacity: 1};
+//	        node.symbolSize = 20;
+	        node.draggable = true;
+	    });
+	    return graph;
+	};
+	
+	function init_option(graph,num_category){
+	    var option;
+	    var categories = [];
+	    var colors = ["rgba(0, 157, 255, 1)","rgba(0, 64, 255, 1)","rgba(119, 0, 255, 1)",
+	    			  "rgba(77, 255, 0, 1)","rgba(0, 255, 255, 1)"];
+	    for(var i=0; i<num_category; i++){
+	    	col_i = i;
+	    	if(i > colors.length){
+	    		col_i = colors.length-1;
+	    	};
+	    	categories[i] = {
+	    		name: '类别'+col_i,
+	            itemStyle: {
+	                color: colors[col_i],
+	                opacity: 0.9, //不透明度
+	            }
+	    	};
+	    }
+
+	    //设置要生成的图的相关属性
+	    option = {
+	        title: {
+	            text: '',
+	            subtext: '',
+	            top: 'top',
+	            left: 'left'
+	        },
+	        tooltip: {},
+	        legend: [{
+	            // selectedMode: 'single',
+	            data: categories.map(function (a) {
+	                return a.name;
+	            })
+	        }],
+	        animationDuration: 1500,
+	        animationEasingUpdate: 'quinticInOut',
+	        series: [
+	            {
+//	                name: 'Les Miserables',
+	                type: 'graph',
+	                layout: 'none',
+	                //下面三项分别设置节点数据，边数据，种类数据
+	                data: graph.nodes,
+	                links: graph.links,
+	                categories: categories,
+	                roam: true,
+	                animation: false,
+	                focusNodeAdjacency: true,
+	                itemStyle: {
+	                    normal: {
+	                        borderColor: '#fff',
+	                        borderWidth: 0,
+	                        shadowBlur: 10,
+	                        shadowColor: 'rgba(0, 0, 0, 0.3)'
+	                    }
+	                },
+	                label: {
+	                	show: false,
+	                    position: 'bottom',
+	                    formatter: '{b}'
+	                },
+	                lineStyle: {
+	                    color: 'rgba(0, 70, 255, 0.5)',
+//	                    color: "rgba(0, 187, 255, 0.5)",
+	                    curveness: 0.01
+	                },
+	                emphasis: {
+	                    lineStyle: {
+	                        width: 10
+	                    }
+	                },
+	                force: {
+	                    repulsion: 270
+	                }
+	            }
+	        ]
+	    };
+	    return option;
+	};
+ 
+</script>
+</body>
+</html>

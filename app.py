@@ -16,6 +16,8 @@ from wordcloud import WordCloud,ImageColorGenerator
 from snownlp import sentiment
 from PIL import Image,ImageDraw,ImageFont
 from os import path
+import math as m
+import networkx as nx
 
 data_path='static/data/weibo'
 data_path_cache='static/data/weibo/analysis_cache'
@@ -25,6 +27,175 @@ def load_wb_data(path):
     weibo['user'] = weibo['user'].map(eval)  # 将读取到的str数据转为dict类型
     num_wb = len(weibo)
     return weibo, num_wb
+    
+
+class Repost():
+    def __init__(self,path):
+        self.reposts = self.load_repost_data(path)
+        self.num_reposts = len(self.reposts)    # 转发微博总数量
+        self.src_wb = self.reposts.iloc[0,]     # 源微博
+        self.network = self.get_network()       # 网络结构
+        self.post_indexs = {str(self.src_wb['id']): 0}                   # 每条微博的编号
+        self.coordinate = {str(self.src_wb['id']): {'x': 0, 'y': 0}}     # 节点坐标
+        self.node_size = {str(self.src_wb['id']) : 35}                   # 节点大小
+        self.category = {str(self.src_wb['id']) : 0}                     # 几点类别
+        self.num_category = 1                   # 类别个数
+        self.calc_all_node_cor()                # 计算所有节点的坐标
+        self.graph_data = self.get_graph_data() # 传给前端的图数据
+
+    # 读取转发数据
+    def load_repost_data(self,path):
+        reposts = pd.read_csv(path)
+        reposts['user'] = reposts['user'].map(eval)
+        return reposts
+
+    # 获取网络结构数据
+    def get_network(self):
+        network = []
+        for i in range(1, self.num_reposts):
+            post = self.reposts.iloc[i,]
+            link = [str(post['pidstr']), str(post['id'])]
+            if link not in network:
+                network.append(link)
+        return nx.DiGraph(network)
+
+    # 获取传给前端的图数据
+    def get_graph_data(self):
+        nodes = [{             # 源微博节点
+            # 'attributes': {'modularity_class': 0},
+            'id': str(self.src_wb['id']),
+            'category': self.category[str(self.src_wb['id'])],
+            'itemStyle': '',
+            # 'label': {'normal': {'show': 'false'}},
+            'label': {'show': 'false'},
+            'name': str(self.src_wb['user']['screen_name']),
+            'symbolSize': self.node_size[str(self.src_wb['id'])],
+            'value': self.src_wb['text'],
+            'x': self.coordinate[str(self.src_wb['id'])]['x'],
+            'y': self.coordinate[str(self.src_wb['id'])]['y']
+        }]
+        links = []
+        cur_nodes = []
+        cur_links = []
+        cur_index = 1
+        for i in range(1, self.num_reposts):
+            post = self.reposts.iloc[i,]    # 第i条转发微博
+            node = str(post['id'])
+            if node not in cur_nodes:
+                self.post_indexs.update({node : cur_index})
+                cur_index += 1
+                nodes.append({
+                    # 'attributes': {'modularity_class': 1},
+                    'id': node,
+                    'category': self.category[node],
+                    'itemStyle': '',
+                    'label': {'normal': {'show': 'false'}},
+                    # 'name': str(node),
+                    'symbolSize': self.node_size[node],
+                    'value': 111,
+                    'x': self.coordinate[node]['x'],
+                    'y': self.coordinate[node]['y']
+                })
+                cur_nodes.append(node)
+            link = [str(post['pidstr']), str(post['id'])]
+            if link not in cur_links:
+                link_id = len(links)
+                links.append({
+                    'id': link_id,
+                    'lineStyle': {'normal': {}},
+                    'name': 'null',
+                    'source': link[0],
+                    'target': link[1]
+                })
+                cur_links.append(link)
+
+        graph_data = {
+            'nodes': nodes,
+            'links': links
+        }
+        return graph_data
+
+    # 计算节点坐标
+    def calc_all_node_cor(self):
+        nodes_list = [str(self.src_wb['id'])]    # 邻居个数不为零的节点
+        while len(nodes_list) != 0:
+            node = nodes_list[0]
+            nodes_list = self.calc_one_node_cor(node,nodes_list)
+            nodes_list.pop(0)
+
+
+    # 计算节点node邻居节点坐标
+    def calc_one_node_cor(self,node,nodes_list):
+        num_nbrs = self.network.out_degree(node)    # node的邻居节点数量
+        neighbors = self.network.neighbors(node)    # node的邻居节点
+        if self.coordinate.get(node):
+            node_x = self.coordinate[node]['x']         # node的x坐标
+            node_y = self.coordinate[node]['y']         # node的y坐标
+        else:
+            print('节点{}的坐标不存在'.format(node))
+            return nodes_list
+        i = 0
+        j = 0
+        for nbr in neighbors:
+            nbr_out = self.network.out_degree(nbr)
+            if nbr_out > 0:
+                nodes_list.append(nbr)      # nbr节点邻居个数不为零，加入到nodes_list中
+
+            # 计算nbr到父节点的半径r和节点大小
+            r = 1.0
+            size = 15
+            category = self.category[node]
+            if num_nbrs < 10:
+                r = 0.5 * r
+            elif num_nbrs < 400:
+                r = r
+            else:
+                r = 1.5 * r
+            if nbr_out > 1 and nbr_out < 10:
+                r = 2 * r
+                category = self.num_category
+                self.num_category += 1
+            elif nbr_out >= 10 and nbr_out < 100:
+                r = 2.2 * r
+                size = size + nbr_out/10
+                category = self.num_category
+                self.num_category+=1
+            elif nbr_out >= 100:
+                r = 2.5 * r
+                size = size + 10 + nbr_out / 100
+                category = self.num_category
+                self.num_category += 1
+
+            # 计算节点坐标
+            if num_nbrs == 1:   # 父节点只有一个出边邻居
+                # 计算父节点的父节点坐标
+                pro_node = next(self.network.predecessors(node))
+                pro_node_x = self.coordinate[pro_node]['x']
+                pro_node_y = self.coordinate[pro_node]['y']
+                nbr_x = node_x + (node_x - pro_node_x)*0.7
+                nbr_y = node_y + (node_y - pro_node_y)*0.7
+                if nbr not in self.coordinate:
+                    self.coordinate.update({nbr: {'x': nbr_x, 'y': nbr_y}})
+                    self.node_size.update({nbr : size})
+                    self.category.update({nbr : category})
+            else:
+                nbr_x = r * m.cos(i * 2 * m.pi / num_nbrs)
+                if nbr_out >= 10:
+                    nbr_x = r * m.cos(m.pi/4)
+                    j+=1
+
+                nbr_y = 0
+                if i < num_nbrs/2:
+                    nbr_y += m.sqrt(r**2 - nbr_x**2)
+                else:
+                    nbr_y -= m.sqrt(r**2 - nbr_x**2)
+                if nbr not in self.coordinate:
+                    self.coordinate.update({nbr: {'x': node_x + nbr_x, 'y': node_y + nbr_y}})
+                    self.node_size.update({nbr: size})
+                    self.category.update({nbr: category})
+                i += 1
+        return nodes_list
+
 
 # 分词，去除停用词、英文、符号和数字等
 def clearTxt(sentence):
@@ -325,6 +496,8 @@ def senti_diffusion_position():
 app = Flask(__name__)
 app.secret_key = 'lisenzzz'
 weibo, num_wb = load_wb_data('static/data/weibo/weibo.csv')
+repost = Repost('static/data/weibo/repost.csv')
+
 
 
 @app.route('/')
@@ -363,6 +536,33 @@ def wb_statistic():
 
     data_json = json.dumps(data)
     return render_template('wbstatistic.html', data_json=data_json)
+    
+
+# 微博转发结构分析
+@app.route('/rpstructure')
+def rp_structure():
+    data = {}    # 所有要传给前端的数据
+
+    data['graph_data'] = repost.graph_data    # 图数据
+    data['node_num'] = repost.num_reposts     # 节点个数
+    data['num_category'] = repost.num_category# 类别个数
+
+    # 统计不同时间的转发微博
+    times = repost.reposts.sort_values(by='created_at')['created_at'].drop_duplicates().to_list() # 所有时间集合
+    rp_records = []     # 记录每个时间段内的微博编号
+    for t in times:
+        posts_id = repost.reposts[repost.reposts['created_at'] == t]['id'].to_list()  # t时刻转发的微博ID
+        # 将微博id转换为微博编号
+        post_indexs = []
+        for post_id in posts_id:
+            post_indexs.append(repost.post_indexs[str(post_id)])
+        rp_records.append({'time': t, 'post_indexs': post_indexs})
+    data['rp_records'] = rp_records
+
+    data_json = json.dumps(data)
+    return render_template('rpstructure.html', data_json = data_json)
+    
+    
 
 # 单条语句情感极性测试，返回极性值
 @app.route('/single_sentiment', methods=['GET', 'POST'])
