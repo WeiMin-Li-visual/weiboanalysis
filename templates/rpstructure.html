@@ -1,169 +1,568 @@
 <!DOCTYPE html>
 <html style="height: 100%">
-<head>
-    <meta charset="utf-8">
-</head>
-<body style="height: 100%; margin: 0">
-<div id="container" style="height: 100%"></div>
-<script type="text/javascript" src="/static/js/echarts.js"></script>
-<script type="text/javascript">
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="../static/layui/css/layui.css">
+    </head>
+    <style type="text/css">
+        #inputId{
+            position: absolute;
+            left: 25%;
+            top: 5%;
+            transform: translate(-25%,-5%);
+            font-family: Microsoft YaHei;
+            font-size:18px;
+            font-weight:bold;
+        }
+    </style>
+    <body style="height: 100%; margin: 0">
+        <div id="leftPart" style="height: 100%;width:60%;float:left;">
+            <div id="forwardRelationship" style="width: 100%; height: 90%;clear:both;">
+<!--                <div id="inputId">微博ID-->
+<!--                    <input><button style="margin:4px;font-weight:normal;">查看</button>-->
+<!--                </div>-->
+            </div>
+            <div id="forwardingAmountTime" style="width: 100%; height: 45%; clear:both;">转发量-时间关系</div>
+        </div>
+        <div id="rightPart" style="height: 100%;width:40%;float:left;">
+            <div id="certificationRation" style="width: 100%; height: 25%;clear:both;">认证比例</div>
+            <div id="forwardingLevel"     style="width: 100%; height: 40%;clear:both;">转发层级</div>
+            <div id="sexRatio"            style="width: 100%; height: 25%;clear:both;">性别比例</div>
+            <div id="provinceRatio"       style="width: 100%; height: 45%;clear:both;">省份比例</div>
+        </div>
+        <script type="text/javascript" src="/static/js/echarts.js"></script>
+        <script type="text/javascript" src="/static/js/china.js"></script>
+        <script type="text/javascript">
 
-    var data = {{ data_json | tojson}};   //接收来自后端的数据
-	data = JSON.parse(data);              //将数据解析为json格式
-    var dom = document.getElementById("container");
-    var myChart = echarts.init(dom);
-    var num_category = data.num_category; //节点类别个数
-    var graph = data.graph_data;          //获取后端返回的图数据
-    graph = init_graph(graph);  		  //初始化图数据
-    var option = init_option(graph,num_category);	 //初始化属性
-    myChart.setOption(option);			  //执行该语句就可以根据option的设置展示图
-    
-    //微博转发结构动态展示
-    graph.nodes.forEach(function (node) {
-	        node.itemStyle.opacity = 0.1;  //初始时刻将所有节点的不透明度设为0.5
-	    });
-	graph.nodes[0].itemStyle.opacity = 1; //源微博节点不透明度设为1
-	myChart.setOption({
-    	series:[{
-               data:graph.nodes,
-               links:graph.links
-           }]
-    });
-    var rp_records = data.rp_records;     //不同时间段内的微博转发记录
-    var rec_index = 0;					  //当前记录下标
-    interval_no = setInterval(function(){
-    	var time = rp_records[rec_index].time;               // 当前时间
-    	var post_indexs = rp_records[rec_index].post_indexs; // 当前时间段内转发微博的编号
-    	post_indexs.forEach(function(node_index){
-    		graph.nodes[node_index].itemStyle.opacity = 1;   // 将当前时间段内的转发微博的不透明度设为1
-    		graph.nodes[node_index].symbolSize+=10;
-    	});
-    	myChart.setOption({
-    		title:{
-                	text : time+'的转发微博'
-           	},
-	    	series:[{
-	               data:graph.nodes,
-	               links:graph.links
-	        }]
-    	});
-    	//节点大小还原
-    	post_indexs.forEach(function(node_index){
-    		graph.nodes[node_index].symbolSize-=10;
-    	});
-    	rec_index+=1;
-    	if(rec_index == rp_records.length){   //到达最后一个时间片，退出循环
-    		myChart.setOption({
-    			title:{
-                	text : '展示完毕！'
-           		},
-		    	series:[{
-		               data:graph.nodes,
-		               links:graph.links
-		        }]
-	    	});
-    		clearInterval(interval_no);
-    	};
-    }, 1500);
-    console.log(rp_records);
-    console.log(graph.nodes[0]);
-    
-    
+            var data = {{ data_json | tojson}};   //接收来自后端的数据
+            data = JSON.parse(data);              //将数据解析为json格式
+            var time = data.time;                 //转发量-时间
+            var time_repost = time.time_repost;
+            var verified = data.verified;         //认证
+            var verified_rate = verified.verified_rate;
+            var level = data.level;               //转发层级
+            var level_dic = level.level_dic;
+            var level_rate = level.level_rate;
+            var gender = data.gender;             //性别比例
+            var gender_rate = gender.gender_rate;
 
+            var dom = document.getElementById("forwardRelationship");
+            var myChart = echarts.init(dom);
+            var num_category = data.num_category; //节点类别个数
+            var graph = data.graph_data;          //获取后端返回的图数据
+            graph = init_graph(graph);  		  //初始化图数据
+            var option = init_option(graph,num_category);	 //初始化属性
+            myChart.setOption(option);			  //执行该语句就可以根据option的设置展示图
 
+            //微博转发结构动态展示
+            graph.nodes.forEach(function (node) {
+                node.itemStyle.opacity = 0.1;  //初始时刻将所有节点的不透明度设为0.5
+            });
+            graph.nodes[0].itemStyle.opacity = 1; //源微博节点不透明度设为1
+            myChart.setOption({
+                series:[{
+                       data:graph.nodes,
+                       links:graph.links
+                   }]
+            });
+            var rp_records = data.rp_records;     //不同时间段内的微博转发记录
+            var rec_index = 0;					  //当前记录下标
+            interval_no = setInterval(function(){
+                var time = rp_records[rec_index].time;               // 当前时间
+                var post_indexs = rp_records[rec_index].post_indexs; // 当前时间段内转发微博的编号
+                post_indexs.forEach(function(node_index){
+                    graph.nodes[node_index].itemStyle.opacity = 1;   // 将当前时间段内的转发微博的不透明度设为1
+                    graph.nodes[node_index].symbolSize+=10;
+                });
+                myChart.setOption({
+                    title:{
+                            text : time+'的转发微博'
+                    },
+                    series:[{
+                           data:graph.nodes,
+                           links:graph.links
+                    }]
+                });
+                //节点大小还原
+                post_indexs.forEach(function(node_index){
+                    graph.nodes[node_index].symbolSize-=10;
+                });
+                rec_index+=1;
+                if(rec_index == rp_records.length){   //到达最后一个时间片，退出循环
+                    myChart.setOption({
+                        title:{
+                            text : '展示完毕！'
+                        },
+                        series:[{
+                               data:graph.nodes,
+                               links:graph.links
+                        }]
+                    });
+                    clearInterval(interval_no);
+                };
+            }, 1500);
+            console.log(rp_records);
+            console.log(graph.nodes[0]);
 
+            //函数区域
+            function init_graph(graph){
+                //给节点的属性进行操作
+                graph.nodes.forEach(function (node) {
+                    node.itemStyle = {opacity: 1};
+                    //node.symbolSize = 20;
+                    node.draggable = true;
+                });
+                return graph;
+            };
 
-    //函数区域
-    function init_graph(graph){
-	    //给节点的属性进行操作
-	    graph.nodes.forEach(function (node) {
-	        node.itemStyle = {opacity: 1};
-//	        node.symbolSize = 20;
-	        node.draggable = true;
-	    });
-	    return graph;
-	};
-	
-	function init_option(graph,num_category){
-	    var option;
-	    var categories = [];
-	    var colors = ["rgba(0, 157, 255, 1)","rgba(0, 64, 255, 1)","rgba(119, 0, 255, 1)",
-	    			  "rgba(77, 255, 0, 1)","rgba(0, 255, 255, 1)"];
-	    for(var i=0; i<num_category; i++){
-	    	col_i = i;
-	    	if(i > colors.length){
-	    		col_i = colors.length-1;
-	    	};
-	    	categories[i] = {
-	    		name: '类别'+col_i,
-	            itemStyle: {
-	                color: colors[col_i],
-	                opacity: 0.9, //不透明度
-	            }
-	    	};
-	    }
+            function init_option(graph,num_category){
+                var option;
+                var categories = [];
+                var colors = ["rgba(0, 157, 255, 1)","rgba(0, 64, 255, 1)","rgba(119, 0, 255, 1)",
+                              "rgba(77, 255, 0, 1)","rgba(0, 255, 255, 1)"];
+                for(var i=0; i<num_category; i++){
+                    col_i = i;
+                    if(i > colors.length){
+                        col_i = colors.length-1;
+                    };
+                    categories[i] = {
+                        name: '类别'+col_i,
+                        itemStyle: {
+                            color: colors[col_i],
+                            opacity: 0.9, //不透明度
+                        }
+                    };
+                }
 
-	    //设置要生成的图的相关属性
-	    option = {
-	        title: {
-	            text: '',
-	            subtext: '',
-	            top: 'top',
-	            left: 'left'
-	        },
-	        tooltip: {},
-	        legend: [{
-	            // selectedMode: 'single',
-	            data: categories.map(function (a) {
-	                return a.name;
-	            })
-	        }],
-	        animationDuration: 1500,
-	        animationEasingUpdate: 'quinticInOut',
-	        series: [
-	            {
-//	                name: 'Les Miserables',
-	                type: 'graph',
-	                layout: 'none',
-	                //下面三项分别设置节点数据，边数据，种类数据
-	                data: graph.nodes,
-	                links: graph.links,
-	                categories: categories,
-	                roam: true,
-	                animation: false,
-	                focusNodeAdjacency: true,
-	                itemStyle: {
-	                    normal: {
-	                        borderColor: '#fff',
-	                        borderWidth: 0,
-	                        shadowBlur: 10,
-	                        shadowColor: 'rgba(0, 0, 0, 0.3)'
-	                    }
-	                },
-	                label: {
-	                	show: false,
-	                    position: 'bottom',
-	                    formatter: '{b}'
-	                },
-	                lineStyle: {
-	                    color: 'rgba(0, 70, 255, 0.5)',
-//	                    color: "rgba(0, 187, 255, 0.5)",
-	                    curveness: 0.01
-	                },
-	                emphasis: {
-	                    lineStyle: {
-	                        width: 10
-	                    }
-	                },
-	                force: {
-	                    repulsion: 270
-	                }
-	            }
-	        ]
-	    };
-	    return option;
-	};
- 
-</script>
-</body>
+                //设置要生成的图的相关属性
+                option = {
+                    title: {
+                        text: '',
+                        subtext: '',
+                        top: 'top',
+                        left: 'left'
+                    },
+                    tooltip: {},
+                    legend: [{
+                        // selectedMode: 'single',
+                        data: categories.map(function (a) {
+                            return a.name;
+                        })
+                    }],
+                    animationDuration: 1500,
+                    animationEasingUpdate: 'quinticInOut',
+                    series: [
+                        {
+                            //name: 'Les Miserables',
+                            type: 'graph',
+                            layout: 'none',
+                            //下面三项分别设置节点数据，边数据，种类数据
+                            data: graph.nodes,
+                            links: graph.links,
+                            categories: categories,
+                            roam: true,
+                            animation: false,
+                            focusNodeAdjacency: true,
+                            itemStyle: {
+                                normal: {
+                                    borderColor: '#fff',
+                                    borderWidth: 0,
+                                    shadowBlur: 10,
+                                    shadowColor: 'rgba(0, 0, 0, 0.3)'
+                                }
+                            },
+                            label: {
+                                show: false,
+                                position: 'bottom',
+                                formatter: '{b}'
+                            },
+                            lineStyle: {
+                                color: 'rgba(0, 70, 255, 0.5)',
+                                //color: "rgba(0, 187, 255, 0.5)",
+                                curveness: 0.01
+                            },
+                            emphasis: {
+                                lineStyle: {
+                                    width: 10
+                                }
+                            },
+                            force: {
+                                repulsion: 270
+                            }
+                        }
+                    ]
+                };
+                return option;
+            };
+
+            <!--转发量-时间-->
+            var forwardingAmountTimeDom = document.getElementById("forwardingAmountTime");
+            var forwardingAmountTimeChart = echarts.init(forwardingAmountTimeDom);
+            forwardingAmountTimeOption = {
+                title : {
+                    text: '转发量-时间',
+                    //subtext: '纯属虚构',
+                    left: 'left'
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    name: '时间/天',
+                    data: Object.keys(time_repost),
+                },
+                yAxis: {
+                    type: 'value' ,
+                    name: '转发量/条',
+                    nameTextStyle: {
+                        lineHeight: 12 ,
+                        padding: [1,2,1,2] ,
+                    }
+                },
+                series: [{
+                    data: Object.keys(time_repost).map(function (key) {
+                        return (time_repost[key]).toFixed(0);
+                    }),
+                    type: 'line',
+                    areaStyle: {},
+                    itemStyle: {
+                        normal: {
+                            color: '#5E9DD6',
+                        }
+                    }
+                }]
+            };
+            forwardingAmountTimeChart.setOption(forwardingAmountTimeOption)   //根据option里的内容展示图表
+
+            <!--认证比例-->
+            var certificationRatioDom = document.getElementById("certificationRation");
+            var certificationRatioChart = echarts.init(certificationRatioDom);
+            certificationOption = {
+                title : {
+                    text: '认证比例',
+                    left: 'left'
+                },
+                label:{
+                    normal:{
+                        show: true,
+                        textStyle:{color:'#000',fontSize:"18"},
+                        position: 'top'
+                    },
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                xAxis: {
+                    type: 'value',
+                    axisLabel: {
+                        textStyle: {
+                            color: '#000',
+                            fontSize:'14'
+                        },
+                        formatter:function(val){
+                            var newval =val/10000;
+                            return val+ "%";
+                        },
+                    }
+                },
+                yAxis: {
+                    type: 'category',
+                    nameLocation:"left",
+                    axisTick:false,
+                    data:  ["非认证","认证"].reverse(),
+                    splitLine: {
+                        show: false
+                    },
+                    axisLabel: {
+                        interval: 0,
+                        rotate: 20
+                    },
+                },
+                series: [{
+                    name: '占比',
+                    type: 'bar',
+                    data: Object.keys(verified_rate).map(function (key) {
+                        return (verified_rate[key]*100).toFixed(0);
+                    }),
+                    barWidth: 20,
+                    label: {
+                        normal: {
+                            show: true,
+                            position: 'right',
+                            offset: [5, -2],
+                            textStyle: {
+                                color: '#000',
+                                fontSize: 14
+                            },
+                            formatter:function({data}){
+                                return data+ "%";
+                            },
+                        }
+                    },
+                    itemStyle: {
+                        normal: {
+                            color:  '#5E9DD6',
+                        }
+                    }
+                }]
+
+            };
+            certificationRatioChart.setOption(certificationOption)   //根据option里的内容展示图表
+
+            <!--转发层级-->
+            var forwardingLevelDom = document.getElementById("forwardingLevel");
+            var forwardingLevelChart = echarts.init(forwardingLevelDom);
+            forwardingLevelOption = {
+                title : {
+                    text: '转发层级',
+                    left: 'left'
+                },
+                label:{
+                    normal:{
+                        show: true,
+                        textStyle:{color:'#000',fontSize:"18"},
+                        position: 'top'
+                    },
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                xAxis: {
+                    type: 'value',
+                    axisLabel: {
+                        textStyle: {
+                            color: '#000',
+                            fontSize:'14'
+                        },
+                         formatter:function(val){
+                            var newval =val/10000;
+                            return val+ "%";
+                         },
+                    }
+                },
+                yAxis: {
+                    type: 'category',
+                    nameLocation:"left",
+                    axisTick:false,
+                    data: Object.keys(level_rate),
+                    splitLine: {
+                        show: false
+                    },
+                    axisLabel: {
+                        interval: 0,
+                        rotate: 20
+                    },
+                },
+                series: [{
+                    name: '占比',
+                    type: 'bar',
+                    data: Object.keys(level_rate).map(function (key) {
+                       return (level_rate[key]*100).toFixed(0);
+                    }),
+                    barWidth: 20,
+                    // barGap: 10,
+                    // smooth: true,
+                    label: {
+                        normal: {
+                            show: true,
+                            position: 'right',
+                            offset: [5, -2],
+                            textStyle: {
+                                color: '#000',
+                                fontSize: 14
+                            },
+                            formatter:function({data}){
+                                return data+ "%";
+                            },
+                        }
+                    },
+                    itemStyle: {
+                        normal: {
+                            color: '#5E9DD6'
+                        }
+                    }
+                }]
+
+            };
+            forwardingLevelChart.setOption(forwardingLevelOption)   //根据option里的内容展示图表
+
+            <!--性别比例-->
+            var sexRatioDom = document.getElementById("sexRatio");
+            var sexRatioChart = echarts.init(sexRatioDom);
+            sexRatioOption = {
+                title : {
+                    text: '性别比例',
+                    //subtext: '纯属虚构',
+                    left: 'left'
+                },
+                label:{
+                    normal:{
+                        show: true,
+                        textStyle:{color:'#000',fontSize:"18"},
+                        position: 'top'
+                    },
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                xAxis: {
+                    type: 'value',
+                    show: true,
+                    axisLabel: {
+                        textStyle: {
+                            color: '#000',
+                            fontSize:'14'
+                        },
+                         formatter:function(val){
+                            var newval =val/10000;
+                            return val+ "%";
+                         },
+                    }
+                },
+                yAxis: {
+                    type: 'category',
+                    nameLocation:"left",
+                    axisTick:false,
+                    data:  ["男","女"].reverse(),
+                    splitLine: {
+                        show: false
+                    },
+                    axisLabel: {
+                        interval: 0,
+                        rotate: 20
+                    },
+                },
+                series: [{
+                    name: '占比',
+                    type: 'bar',
+                    data: Object.keys(gender_rate).map(function (key) {
+                        return (gender_rate[key]*100).toFixed(0);
+                    }),
+                    barWidth: 20,
+                    label: {
+                        normal: {
+                            show: true,
+                            position: 'right',
+                            offset: [5, -2],
+                            textStyle: {
+                                color: '#000',
+                                fontSize: 14
+                            },
+                            formatter:function({data}){
+                                return data+ "%";
+                            },
+                        }
+                    },
+                    itemStyle: {
+                        normal: {
+                            color: '#5E9DD6'
+                        }
+                    }
+                }]
+
+            };
+            sexRatioChart.setOption(sexRatioOption)   //根据option里的内容展示图表
+
+            <!--地图-->
+            var provinceRatioDom = document.getElementById("provinceRatio");   //获取要加入内容的容器
+            var provinceRatioChart = echarts.init(provinceRatioDom);
+            provinceRatioOption = {
+                title : {
+                    text: '省份比例',
+                    //subtext: '纯属虚构',
+                    left: 'left'
+                },
+                tooltip : {
+                    trigger: 'item'
+                },
+
+                visualMap: {
+                    min: 0,
+                    max: 100,
+                    left: 'left',
+                    top: 'bottom',
+                    text:['高','低'],           // 文本，默认为数值文本
+                    calculable : true,
+                    itemWidth: 10,
+                    itemHeight:100
+                },
+                /*toolbox: {
+                    show: true,
+                    orient : 'vertical',
+                    left: 'right',
+                    top: 'center',
+                    feature : {
+                        mark : {show: true},
+                        dataView : {show: true, readOnly: false},
+                        restore : {show: true},
+                        saveAsImage : {show: true}
+                    }
+                },*/
+                series : [{
+                    name: '占比',
+                    type: 'map',
+                    mapType: 'china',
+                    roam: false,
+                    label: {
+                        normal: {
+                            show: false
+                        },
+                        emphasis: {
+                            show: true
+                        },
+                    },
+                    itemStyle: {
+                        areaColor: 'rgb(128, 128, 128)',
+                        color: 'rgb(128, 128, 128)',
+                    },
+                    data:[
+                        {name: '北京',value: Math.round(Math.random()*100)},
+                        {name: '天津',value: Math.round(Math.random()*100)},
+                        {name: '上海',value: Math.round(Math.random()*100)},
+                        {name: '重庆',value: Math.round(Math.random()*100)},
+                        {name: '河北',value: Math.round(Math.random()*100)},
+                        {name: '河南',value: Math.round(Math.random()*100)},
+                        {name: '云南',value: Math.round(Math.random()*100)},
+                        {name: '辽宁',value: Math.round(Math.random()*100)},
+                        {name: '黑龙江',value: Math.round(Math.random()*100)},
+                        {name: '湖南',value: Math.round(Math.random()*100)},
+                        {name: '安徽',value: Math.round(Math.random()*100)},
+                        {name: '山东',value: Math.round(Math.random()*100)},
+                        {name: '新疆',value: Math.round(Math.random()*100)},
+                        {name: '江苏',value: Math.round(Math.random()*100)},
+                        {name: '浙江',value: Math.round(Math.random()*100)},
+                        {name: '江西',value: Math.round(Math.random()*100)},
+                        {name: '湖北',value: Math.round(Math.random()*100)},
+                        {name: '广西',value: Math.round(Math.random()*100)},
+                        {name: '甘肃',value: Math.round(Math.random()*100)},
+                        {name: '山西',value: Math.round(Math.random()*100)},
+                        {name: '内蒙古',value: Math.round(Math.random()*100)},
+                        {name: '陕西',value: Math.round(Math.random()*100)},
+                        {name: '吉林',value: Math.round(Math.random()*100)},
+                        {name: '福建',value: Math.round(Math.random()*100)},
+                        {name: '贵州',value: Math.round(Math.random()*100)},
+                        {name: '广东',value: Math.round(Math.random()*100)},
+                        {name: '青海',value: Math.round(Math.random()*100)},
+                        {name: '西藏',value: Math.round(Math.random()*100)},
+                        {name: '四川',value: Math.round(Math.random()*100)},
+                        {name: '宁夏',value: Math.round(Math.random()*100)},
+                        {name: '海南',value: Math.round(Math.random()*100)},
+                        {name: '台湾',value: Math.round(Math.random()*100)},
+                        {name: '香港',value: Math.round(Math.random()*100)},
+                        {name: '澳门',value: Math.round(Math.random()*100)}
+                    ]
+                }]
+            };
+            provinceRatioChart.setOption(provinceRatioOption)   //根据option里的内容展示图表
+
+        </script>
+    </body>
 </html>
