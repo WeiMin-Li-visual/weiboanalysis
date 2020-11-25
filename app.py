@@ -92,9 +92,9 @@ class Repost():
                     'category': self.category[node],
                     'itemStyle': '',
                     'label': {'normal': {'show': 'false'}},
-                    # 'name': str(node),
+                    'name': post['user']['screen_name'],
                     'symbolSize': self.node_size[node],
-                    'value': 111,
+                    'value': str(post['text']),
                     'x': self.coordinate[node]['x'],
                     'y': self.coordinate[node]['y']
                 })
@@ -500,18 +500,10 @@ def senti_diffusion_position():
     return position_count, position_wc
 
 
-# 载入微博转发数据
-def load_wb_repost_data(path):
-    weiboRepost = pd.read_csv(path)
-    weiboRepost['user'] = weiboRepost['user'].map(eval)
-    num_repost = len(weiboRepost)
-    return weiboRepost, num_repost
-
 
 app = Flask(__name__)
 app.secret_key = 'lisenzzz'
 weibo, num_wb = load_wb_data('static/data/weibo/weibo.csv')
-weiboRepost, num_repost = load_wb_repost_data('static/data/weibo/repost.csv')
 repost = Repost('static/data/weibo/repost.csv')
 
 
@@ -571,6 +563,8 @@ def wb_forward():
         rp_records.append({'time': t, 'post_indexs': post_indexs})
     data['rp_records'] = rp_records
 
+    weiboRepost = repost.reposts
+    num_repost = repost.num_reposts
     users = weiboRepost.loc[:, 'user']
     # 统计转发微博的用户的性别比例
     f_count = 0

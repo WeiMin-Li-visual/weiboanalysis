@@ -111,6 +111,9 @@
                     node.itemStyle = {opacity: 1};
                     //node.symbolSize = 20;
                     node.draggable = true;
+                    node.label = {
+			            show: node.symbolSize > 20
+			        };
                 });
                 return graph;
             };
@@ -142,7 +145,11 @@
                         top: 'top',
                         left: 'left'
                     },
-                    tooltip: {},
+                    tooltip: {
+				        trigger: 'item',
+				        formatter: "用户 : {b}<br/>内容 : {c}",
+				        position: 'inside'
+				    },
                     legend: [{
                         // selectedMode: 'single',
                         data: categories.map(function (a) {
@@ -184,7 +191,8 @@
                             emphasis: {
                                 lineStyle: {
                                     width: 10
-                                }
+                                },
+                                
                             },
                             force: {
                                 repulsion: 270
