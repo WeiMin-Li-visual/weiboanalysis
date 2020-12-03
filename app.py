@@ -40,7 +40,8 @@ class Repost():
         self.post_indexs = {str(self.src_wb['id']): 0}  # 每条微博的编号
         self.coordinate = {str(self.src_wb['id']): {'x': 0, 'y': 0}}  # 节点坐标
         self.node_size = {str(self.src_wb['id']): 35}  # 节点大小
-        self.category = {str(self.src_wb['id']): 0}  # 几点类别
+        self.category = {str(self.src_wb['id']): 0}  # 节点类别
+        self.st_category = {}  # 节点情感类别
         self.num_category = 1  # 类别个数
         self.calc_all_node_cor()  # 计算所有节点的坐标
         self.graph_data = self.get_graph_data()  # 传给前端的图数据
@@ -76,6 +77,15 @@ class Repost():
             'x': self.coordinate[str(self.src_wb['id'])]['x'],
             'y': self.coordinate[str(self.src_wb['id'])]['y']
         }]
+        div_txt = clearTxt(str(self.src_wb['text']))
+        st_cat = 2
+        if div_txt:
+            senti_value = sen_value(div_txt)
+            if senti_value > 0.57:
+                st_cat = 1
+            elif senti_value < 0.5:
+                st_cat = 0
+        self.st_category.update({str(self.src_wb['id']):st_cat})
         links = []
         cur_nodes = []
         cur_links = []
@@ -86,6 +96,16 @@ class Repost():
             if node not in cur_nodes:
                 self.post_indexs.update({node: cur_index})
                 cur_index += 1
+                # 计算微博的情感值
+                div_txt = clearTxt(str(post['text']))
+                st_cat = 2
+                if div_txt:
+                    senti_value = sen_value(div_txt)
+                    if senti_value > 0.57:
+                        st_cat = 1
+                    elif senti_value < 0.5:
+                        st_cat = 0
+                self.st_category.update({node: st_cat})
                 nodes.append({
                     # 'attributes': {'modularity_class': 1},
                     'id': node,
@@ -110,6 +130,8 @@ class Repost():
                     'target': link[1]
                 })
                 cur_links.append(link)
+
+
 
         graph_data = {
             'nodes': nodes,
@@ -548,8 +570,11 @@ def wb_statistic():
 # 微博转发结构页面数据
 @app.route('/rpstructure')
 def wb_forward():
-    data = {'graph_data': repost.graph_data, 'node_num': repost.num_reposts,
-            'num_category': repost.num_category}  # 所有要传给前端的数据
+    data = {'graph_data': repost.graph_data,
+            'node_num': repost.num_reposts,
+            'num_category': repost.num_category,
+            'category': repost.category,
+            'st_category': repost.st_category}  # 所有要传给前端的数据
 
     # 统计不同时间的转发微博
     times = repost.reposts.sort_values(by='created_at')['created_at'].drop_duplicates().to_list()  # 所有时间集合
@@ -625,7 +650,6 @@ def wb_forward():
                 visited.append(now_node_list[j])  # 加入到已遍历节点
                 new_neigh_list.append(now_node_list[j])
         nodes_list = new_neigh_list
-    print(level_dic)
     level = {
         "level_dic": level_dic,
         "level_rate": level_rate,

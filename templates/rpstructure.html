@@ -18,10 +18,15 @@
     <body style="height: 100%; margin: 0">
         <div id="leftPart" style="height: 100%;width:60%;float:left;">
             <div id="forwardRelationship" style="width: 100%; height: 90%;clear:both;">
-<!--                <div id="inputId">微博ID-->
-<!--                    <input><button style="margin:4px;font-weight:normal;">查看</button>-->
-<!--                </div>-->
+                <!--<div id="inputId">微博ID
+                    <input><button style="margin:4px;font-weight:normal;">查看</button>
+                </div>-->
             </div>
+		    <div style="margin-left: 40%;">
+		      <button a onclick="play()";type="button" class="layui-btn layui-btn-normal">播放</button>
+		      <button id='senti'; a onclick="switch_cat()";type="button" class="layui-btn layui-btn-normal">情感</button>
+		      <button a onclick="resetgraph()";type="button" class="layui-btn layui-btn-normal">重置</button>
+		    </div>
             <div id="forwardingAmountTime" style="width: 100%; height: 45%; clear:both;">转发量-时间关系</div>
         </div>
         <div id="rightPart" style="height: 100%;width:40%;float:left;">
@@ -46,63 +51,57 @@
             var gender = data.gender;             //性别比例
             var gender_rate = gender.gender_rate;
 
+			var df_category = data.category;      //节点默认类别
+            var st_category = data.st_category;   //节点的情感类别
+            var st_categories = [
+            	{
+                    name: '消极',
+                    itemStyle: {
+                        color: "rgba(255, 17, 0, 1)",
+                        opacity: 0.9, //不透明度
+                    }
+                },
+                {
+                    name: '积极',
+                    itemStyle: {
+                        color: "rgba(0, 255, 38, 1)",
+                        opacity: 0.9, //不透明度
+                    }
+                },
+                {
+                    name: '中性',
+                    itemStyle: {
+                        color: '#2f4554',
+                        opacity: 0.9, //不透明度
+                    }
+                },
+            ];
+			var num_category = data.num_category; //节点类别个数
+			var categories = [];				  //默认类别
+            var colors = ["rgba(0, 157, 255, 1)","rgba(0, 64, 255, 1)","rgba(119, 0, 255, 1)",
+                          "rgba(77, 255, 0, 1)","rgba(0, 255, 255, 1)"];
+            for(var i=0; i<num_category; i++){
+                col_i = i;
+                if(i > colors.length){
+                    col_i = colors.length-1;
+                };
+                categories[i] = {
+                    name: '类别'+col_i,
+                    itemStyle: {
+                        color: colors[col_i],
+                        opacity: 0.9, //不透明度
+                    }
+                };
+            }
+            
             var dom = document.getElementById("forwardRelationship");
             var myChart = echarts.init(dom);
-            var num_category = data.num_category; //节点类别个数
             var graph = data.graph_data;          //获取后端返回的图数据
             graph = init_graph(graph);  		  //初始化图数据
-            var option = init_option(graph,num_category);	 //初始化属性
+            var option = init_option(graph);	  //初始化属性
             myChart.setOption(option);			  //执行该语句就可以根据option的设置展示图
-
-            //微博转发结构动态展示
-            graph.nodes.forEach(function (node) {
-                node.itemStyle.opacity = 0.1;  //初始时刻将所有节点的不透明度设为0.5
-            });
-            graph.nodes[0].itemStyle.opacity = 1; //源微博节点不透明度设为1
-            myChart.setOption({
-                series:[{
-                       data:graph.nodes,
-                       links:graph.links
-                   }]
-            });
-            var rp_records = data.rp_records;     //不同时间段内的微博转发记录
-            var rec_index = 0;					  //当前记录下标
-            interval_no = setInterval(function(){
-                var time = rp_records[rec_index].time;               // 当前时间
-                var post_indexs = rp_records[rec_index].post_indexs; // 当前时间段内转发微博的编号
-                post_indexs.forEach(function(node_index){
-                    graph.nodes[node_index].itemStyle.opacity = 1;   // 将当前时间段内的转发微博的不透明度设为1
-                    graph.nodes[node_index].symbolSize+=10;
-                });
-                myChart.setOption({
-                    title:{
-                            text : time+'的转发微博'
-                    },
-                    series:[{
-                           data:graph.nodes,
-                           links:graph.links
-                    }]
-                });
-                //节点大小还原
-                post_indexs.forEach(function(node_index){
-                    graph.nodes[node_index].symbolSize-=10;
-                });
-                rec_index+=1;
-                if(rec_index == rp_records.length){   //到达最后一个时间片，退出循环
-                    myChart.setOption({
-                        title:{
-                            text : '展示完毕！'
-                        },
-                        series:[{
-                               data:graph.nodes,
-                               links:graph.links
-                        }]
-                    });
-                    clearInterval(interval_no);
-                };
-            }, 1500);
-            console.log(rp_records);
-            console.log(graph.nodes[0]);
+            var interval_no = setInterval(function(){},1500);
+            
 
             //函数区域
             function init_graph(graph){
@@ -114,31 +113,15 @@
                     node.label = {
 			            show: node.symbolSize > 20
 			        };
+			        var node_id = node.id;
+			        node.category = data.category[node_id];
                 });
                 return graph;
             };
 
-            function init_option(graph,num_category){
-                var option;
-                var categories = [];
-                var colors = ["rgba(0, 157, 255, 1)","rgba(0, 64, 255, 1)","rgba(119, 0, 255, 1)",
-                              "rgba(77, 255, 0, 1)","rgba(0, 255, 255, 1)"];
-                for(var i=0; i<num_category; i++){
-                    col_i = i;
-                    if(i > colors.length){
-                        col_i = colors.length-1;
-                    };
-                    categories[i] = {
-                        name: '类别'+col_i,
-                        itemStyle: {
-                            color: colors[col_i],
-                            opacity: 0.9, //不透明度
-                        }
-                    };
-                }
-
+            function init_option(graph){
                 //设置要生成的图的相关属性
-                option = {
+                var option = {
                     title: {
                         text: '',
                         subtext: '',
@@ -192,7 +175,6 @@
                                 lineStyle: {
                                     width: 10
                                 },
-                                
                             },
                             force: {
                                 repulsion: 270
@@ -202,7 +184,115 @@
                 };
                 return option;
             };
+            
+            //微博转发结构动态展示
+            function play(){
+            	clearInterval(interval_no);
+	            graph.nodes.forEach(function (node) {
+	                node.itemStyle.opacity = 0.1;  //初始时刻将所有节点的不透明度设为0.5
+	            });
+	            graph.nodes[0].itemStyle.opacity = 1; //源微博节点不透明度设为1
+	            myChart.setOption({
+	                series:[{
+	                       data:graph.nodes,
+	                       links:graph.links
+	                   }]
+	            });
+	            var rp_records = data.rp_records;     //不同时间段内的微博转发记录
+	            var rec_index = 0;					  //当前记录下标
+	            var rp_num = data.node_num - 1;		  //转发量
+	            var cur_num = 0;
+	            interval_no = setInterval(function(){
+	                var time = rp_records[rec_index].time;               // 当前时间
+	                var post_indexs = rp_records[rec_index].post_indexs; // 当前时间段内转发微博的编号
+	                post_indexs.forEach(function(node_index){
+	                    graph.nodes[node_index].itemStyle.opacity = 1;   // 将当前时间段内的转发微博的不透明度设为1
+	                    graph.nodes[node_index].symbolSize+=10;
+	                });
+	                cur_num += post_indexs.length;
+	                myChart.setOption({
+	                    title:{
+	                            text : time+'的转发微博    '+'转发量：'+cur_num+'/'+rp_num
+	                    },
+	                    series:[{
+	                           data:graph.nodes,
+	                           links:graph.links
+	                    }]
+	                });
+	                //节点大小还原
+	                post_indexs.forEach(function(node_index){
+	                    graph.nodes[node_index].symbolSize-=10;
+	                });
+	                rec_index+=1;
+	                if(rec_index == rp_records.length){   //到达最后一个时间片，退出循环
+	                    myChart.setOption({
+	                        title:{
+	                            text : '展示完毕！'
+	                        },
+	                        series:[{
+	                               data:graph.nodes,
+	                               links:graph.links
+	                        }]
+	                    });
+	                    clearInterval(interval_no);
+	                };
+	            }, 1500);
+            }
 
+			//重置
+			function resetgraph(){
+				clearInterval(interval_no);
+				graph = init_graph(graph);  		  
+	            option = init_option(graph,num_category);	
+	            myChart.setOption(option);
+	            var bt = document.getElementById('senti');
+	            bt.textContent = '情感';
+			}
+			
+			//节点类别切换
+			function switch_cat(){
+				var bt = document.getElementById('senti');
+				if(bt.textContent=='情感'){
+					graph.nodes.forEach(function (node) {
+		                var node_id = node.id;
+		                node.category = data.st_category[node_id];
+		            });
+					myChart.setOption({
+						legend: [{
+	                        data: st_categories.map(function (a) {
+	                            return a.name;
+	                        })
+	                    }],
+						series: [{
+							data: graph.nodes,
+	                        categories: st_categories
+	                    }]
+					});
+					bt.textContent = '默认';
+				}
+				else{
+					graph.nodes.forEach(function (node) {
+		                var node_id = node.id;
+		                node.category = data.category[node_id];
+		            });
+					myChart.setOption({
+						legend: [{
+	                        data: categories.map(function (a) {
+	                            return a.name;
+	                        })
+	                    }],
+						series: [{
+							data: graph.nodes,
+	                        categories: categories
+	                    }]
+					});
+					bt.textContent = '情感';
+				}
+				
+			}
+			
+			
+			
             <!--转发量-时间-->
             var forwardingAmountTimeDom = document.getElementById("forwardingAmountTime");
             var forwardingAmountTimeChart = echarts.init(forwardingAmountTimeDom);
@@ -315,7 +405,6 @@
                         }
                     }
                 }]
-
             };
             certificationRatioChart.setOption(certificationOption)   //根据option里的内容展示图表
 
