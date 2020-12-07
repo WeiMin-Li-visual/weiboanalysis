@@ -5,25 +5,33 @@
     <link rel="stylesheet" href="../static/layui/css/layui.css">
 </head>
 <body style="height: 100%; margin: 0">
-<div id="container1" style="height: 70%">
-	<div id="chart1" style="width: 50%; height: 100%; float: left;">chart1</div>
-	<div id="chart2" style="width: 50%; height: 100%; float: left;">chart2</div>
+<div id="container1" style="height: 70%; border-bottom: 1px solid #b2b2b2;">
+	<div id="chart1" style="width: 58%; height: 100%; float: left;">chart1</div>
+	<div id="chart2" style="width: 41%; height: 100%; float: left; border-left: 1px solid #b2b2b2;">chart2</div>
 </div>
-<div id="container2" style="height: 50%">
-	<div id="chart3" style="width: 50%; height: 100%; float: left;">chart3</div>
-	<div id="chart4" style="width: 50%; height: 100%; float: left;">chart4</div>
+
+<div id="comtainer2" style="height: 60%">
+	<div id="chart3" style="width: 25%; height: 100%;float: left;">转发微博比例</div>
+	<div id="chart4" style="width: 75%; height: 100%;float: left;">转发评论点赞数量分布</div>
+
 </div>
 <script type="text/javascript" src="/static/js/echarts.js"></script>
 <script type="text/javascript">
 
-	var data = {{ data_json | tojson}};   //接收来自后端的数据
+	var data = {{ weibo_json | tojson}};   //接收来自后端的数据
 	data = JSON.parse(data);              //将数据解析为json格式
     var source = data.source;
 	var src_rate = source.src_rate;
-	
-	var dom = document.getElementById("chart1");   //获取要加入内容的容器
-    var myChart = echarts.init(dom);
-	option = {
+	var year_count = data.year_count;
+	var repost_rate = data.repost_rate;
+	var repo_dic = data.distribution.repo_dic;
+	var comments_dic = data.distribution.comments_dic;
+	var attitudes_dic = data.distribution.attitudes_dic;
+
+	<!-- 微博来源 -->
+	var source_dom = document.getElementById("chart1");   //获取要加入内容的容器
+    var source_chart = echarts.init(source_dom);
+	source_option = {
 	    tooltip: {},
 	    title: [{
 	        text: '微博来源',
@@ -36,8 +44,6 @@
 	        textAlign: 'center'
 	    }],
 	    grid: [{
-//	        top: 50,
-//	        width: '50%',
 	        bottom: '1%',
 	        left: 10,
 	        containLabel: true
@@ -97,8 +103,131 @@
 	        })
 	    }]
 	};
-	myChart.setOption(option)   //根据option里的内容展示图表
-	
+	source_chart.setOption(source_option)   //根据option里的内容展示图表
+
+	<!-- 微博数量与时间 -->
+	var time_dom = document.getElementById("chart2");
+	var time_chart = echarts.init(time_dom);
+	time_option = {
+		title:{
+			text: '微博-时间分布',
+			left: '7%',
+		},
+		tooltip: {
+			trigger: 'axis'
+		},
+		xAxis:[{
+			type:'category',
+			data: Object.keys(year_count),
+		}],
+		yAxis:[{
+			type:'value'
+		}],
+		series:[{
+			type:'bar',
+			itemStyle: {
+                color: "#4682B4",
+            },
+			label: {
+	            normal: {
+	                position: 'top',
+					color: "#000000",
+	                show: true
+	            }
+	        },
+			data: Object.keys(year_count).map(function (key) {
+				return year_count[key]
+			})
+		}]
+	};
+	time_chart.setOption(time_option)
+
+	<!-- 转发微博占比 -->
+	var repostRate_dom =  document.getElementById("chart3");
+	var repostRate_chart = echarts.init(repostRate_dom);
+	repostRate_option = {
+		title:{
+			text:'转发微博占比',
+			left: '50%',
+			bottom: '0%',
+	        textAlign: 'center'
+		},
+		tooltip: {
+			trigger: 'item',
+			formatter: '{b} : {c} ({d}%)'
+		},
+		series:[{
+			name:'微博类型',
+			type: 'pie',
+	        radius: ['40', '50%'],
+	        center: ['50%', '60%'],
+	        data: Object.keys(repost_rate).map(function (key) {
+				return {
+					name: key,
+					value: repost_rate[key]
+				}
+			})
+		}]
+	};
+	repostRate_chart.setOption(repostRate_option)
+
+	<!-- 转发评论点赞分布 -->
+	var distribution_dom = document.getElementById("chart4");
+	var distribution_chart = echarts.init(distribution_dom);
+	ditribution_option = {
+		title:[{
+			text:'转发数量分布',
+			left: '20%',
+			bottom:'0%',
+	        textAlign: 'center'
+		},{
+			text:'评论数量分布',
+			left: '50%',
+			bottom:'0%',
+	        textAlign: 'center'
+		},{
+			text:'点赞数量分布',
+			left: '80%',
+			bottom:'0%',
+	        textAlign: 'center'
+		}],
+		tooltip: {
+			trigger: 'item',
+			formatter: '{b} : {c} ({d}%)'
+		},
+		series:[{
+			type: 'pie',
+	        radius: ['30%', '50%'],
+	        center: ['20%', '60%'],
+	        data: Object.keys(repo_dic).map(function (key) {
+				return {
+					name: key,
+					value: repo_dic[key]
+				}
+			}),
+		},{
+			type: 'pie',
+	        radius: ['30%', '50%'],
+	        center: ['50%', '60%'],
+	        data: Object.keys(comments_dic).map(function (key) {
+				return {
+					name: key,
+					value: comments_dic[key]
+				}
+			}),
+		},{
+			type: 'pie',
+	        radius: ['30%', '50%'],
+	        center: ['80%', '60%'],
+	        data: Object.keys(attitudes_dic).map(function (key) {
+				return {
+					name: key,
+					value: attitudes_dic[key]
+				}
+			}),
+		}]
+	};
+	distribution_chart.setOption(ditribution_option)
 </script>
 </body>
 </html>

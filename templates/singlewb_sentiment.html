@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../static/layui/css/layui.css" media="all">
+    <style>
+
+    </style>
+</head>
+<body style="height: 100%;margin: 0">
+    <div class="layui-row">
+        <div class="layui-col-md6">
+            <div class="layui-row" style="height: 40%">
+                <div id="control">
+                    <form class="layui-form" method="POST"><br><br>
+                      <div class="layui-form-item" ><label class="layui-form-label" style="font-size: 15px">输入微博ID</label>
+                        <div class="layui-input-block">
+                          <input type="number" name="content_value" placeholder="请输入0到55169之间的整数，例如789" autocomplete="off" class="layui-input" style="Float:left;width: 80%;font-size: 15px" >
+                          <button class="layui-btn" lay-submit lay-filter="*" style="Float:left;position:absolute">提交</button>
+                        </div>
+                      </div>
+                    </form>
+                    <iframe id="iframe" name="iframe" style="display:none;"></iframe>
+                </div>
+            </div>
+            <div class="layui-row" style="height: 40%">
+                <div style="padding: 20px; background-color: #F2F2F2;margin-top:5%">
+                    <div class="layui-card" >
+                        <div class="layui-card-header">微博内容</div>
+                        <div id="weibo_text" class="layui-card-body">
+                            {{show_weibo_text}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+     <div class="layui-col-md6">
+        <div id="container" style="height: 100%;width:30%">
+            <div id="chart1" style="width: 350%; height: 400%; float:left;"></div>
+        </div>
+     </div>
+ </div>
+
+
+<script src="../static/layui/layui.js"></script>
+<script type="text/javascript" src="/static/js/echarts.js"></script>
+<script type="text/javascript" src="/static/js/function.js"></script>
+<script type="text/javascript">
+
+    var senti_value={{senti_value}};
+    var content_err={{content_err}};
+    var dom = document.getElementById("chart1");   //获取要加入内容的容器
+    var myChart = echarts.init(dom);
+    var option;
+    function toDecimal(x) {
+        var f = parseFloat(x);
+        if (isNaN(f)) {
+            return;
+        }
+        f = Math.round(x*100)/100;
+        return f;
+    }
+    layui.use('layer',function(){
+        var layer=layui.layer;
+        if(content_err===1) {
+            // senti_other=toDecimal(1-senti_value)
+            // diff=senti_value-senti_other
+            // if(Math.abs(diff)<=0.1)
+            if(senti_value<0.57 && senti_value>=0.5)
+            {
+                layer.msg('该文本情感倾向偏向中性')
+            }
+            if(senti_value>=0.57)
+                 {
+                    layer.msg('该文本情感倾向偏向积极倾向')
+                 }
+            if(senti_value<0.5){
+                     layer.msg('该文本情感倾向偏向消极倾向')
+                 }
+            option = {
+                title: {
+                    text: '当前文本情感分布',
+                    left: 'center',
+                     padding: [40,0,100,100],
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b} : {c} ({d}%)'
+                },
+
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    data: ['积极极性', '消极极性']
+                },
+                series: [
+                {
+                    name: '情感极性',
+                    type: 'pie',
+                    selectedMode: 'single',
+                    radius: [0, '70%'],
+                    center: ['50%', '60%'],
+                    label: {
+                        position: 'inner'
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    data: [
+                        {value: senti_value, name: '积极情绪', selected: true},
+                        {value: toDecimal(1-senti_value), name: '消极情绪'},
+                    ]
+                }
+                ]
+                // series: [
+                // {
+                //     name: '情感极性',
+                //     type: 'pie',
+                //     radius: '40%',
+                //     center: ['50%', '40%'],
+                //     data: [
+                //         {value: senti_value, name: '积极情绪'},
+                //         {value: toDecimal(1-senti_value), name: '消极情绪'},
+                //     ],
+                //     emphasis: {
+                //         itemStyle: {
+                //             shadowBlur: 10,
+                //             shadowOffsetX: 0,
+                //             shadowColor: 'rgba(0, 0，0,0.5)'
+                //         }
+                //     }
+                // }
+                // ]
+            };
+            myChart.setOption(option)
+        }
+        else{
+            layer.msg('输入格式有误，请重新输入');
+        }
+	});
+</script>
+</body>
+</html>

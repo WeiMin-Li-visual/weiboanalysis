@@ -30,6 +30,11 @@ def load_wb_data(path):
     num_wb = len(weibo)
     return weibo, num_wb
 
+def load_ur_data(path):
+    user = pd.read_csv(path)
+    # weibo['user'] = weibo['user'].map(eval)  # 将读取到的str数据转为dict类型
+    num_ur = len(user)
+    return user, num_ur
 
 class Repost():
     def __init__(self, path):
@@ -526,6 +531,7 @@ def senti_diffusion_position():
 app = Flask(__name__)
 app.secret_key = 'lisenzzz'
 weibo, num_wb = load_wb_data('static/data/weibo/weibo.csv')
+user, num_ur = load_ur_data('static/data/weibo/user.csv')
 repost = Repost('static/data/weibo/repost.csv')
 
 
@@ -534,7 +540,7 @@ def hello_world():
     return render_template('index.html')
 
 
-# 微博数据来源可视化
+# 微博数据可视化
 @app.route('/wbstatistic')
 def wb_statistic():
     data = {}  # 所有要传给前端的数据
@@ -563,8 +569,197 @@ def wb_statistic():
     }
     data['source'] = source
 
+    # 微博数量-时间
+    years = []
+    for i in weibo['created_at']:
+        date = i.split('-')
+        years.append(date[0])
+    year_count = pd.Series(years).value_counts().sort_index(ascending=False)
+    '''year_count = {}
+    for i in range(len(year_list)):
+        year = year_list.index[i]
+        num = year_list[i]
+        year_count.update({year: int(num)})'''
+    data['year_count'] = year_count.to_dict()
+
+     # 转发微博占比
+    repo_count = 0
+    post_count = 0
+    for i in range(num_wb):
+        if not pd.isnull(weibo.loc[i]['retweeted_status']):
+            repo_count += 1
+        elif pd.isnull(weibo.loc[i]['retweeted_status']):
+            post_count += 1
+    repost_rate = {"转发微博": int(repo_count)}
+    repost_rate.update({"原创微博": int(post_count)})
+    data['repost_rate'] = repost_rate
+
+    # 微博转发、评论、点赞分布
+    reposts_count = weibo['reposts_count'].value_counts().sort_index()
+    comments_count = weibo['comments_count'].value_counts().sort_index() #数量统计，按index排序(为了方便嘻嘻嘻）
+    attitudes_count = weibo['attitudes_count'].value_counts().sort_index()
+
+    repo_dic = {'没有转发': int(reposts_count[0]),
+                '1次转发': int(reposts_count[1]),
+                '2次转发': int(reposts_count[2]),
+                '3次转发': int(reposts_count[3]),
+                '4次转发': int(reposts_count[4]),
+                '5次转发': int(reposts_count[5]),
+                '6-10次转发': int(reposts_count[6:11].sum()),
+                '10次以上转发': int(reposts_count[11:].sum())}
+    print(repo_dic)
+    comments_dic = {'没有评论': int(comments_count[0]),
+                    '1条评论': int(comments_count[1]),
+                    '2条评论': int(comments_count[2]),
+                    '3条评论': int(comments_count[3]),
+                    '4条评论': int(comments_count[4]),
+                    '5条评论': int(comments_count[5]),
+                    '6-10条评论': int(comments_count[6:11].sum()),
+                    '10条以上评论': int(comments_count[11:].sum())}
+    print(comments_dic)
+    attitudes_dic = {'没有点赞': int(attitudes_count[0]),
+                     '1个点赞': int(attitudes_count[1]),
+                     '2个点赞': int(attitudes_count[2]),
+                     '3个点赞': int(attitudes_count[3]),
+                     '4个点赞': int(attitudes_count[4]),
+                     '5个点赞': int(attitudes_count[5]),
+                     '6-10个点赞': int(attitudes_count[6:11].sum()),
+                     '10个以上点赞': int(attitudes_count[11:].sum())}
+    print(attitudes_dic)
+    distribution = {
+        'repo_dic': repo_dic,
+        'comments_dic': comments_dic,
+        'attitudes_dic': attitudes_dic
+    }
+    data['distribution'] = distribution
+
     data_json = json.dumps(data)
-    return render_template('wbstatistic.html', data_json=data_json)
+    return render_template('wbstatistic.html', weibo_json=data_json)
+
+# 用户数据可视化
+@app.route('/urstatistic')
+def ur_statistic():
+    data = {}  #所有要传给前端的数据
+    # 统计转发微博的用户的性别比例
+    f_count = 0
+    m_count = 0
+    for i in range(num_ur):
+        if user.loc[i]['gender'] == 'f':
+            f_count += 1
+        elif user.loc[i]['gender'] == 'm':
+            m_count += 1
+    gender_rate = {"female": int(f_count) / num_ur}
+    gender_rate.update({"male": int(m_count) / num_ur})
+# 传给前端的转发微博用户性别比例数据
+    gender = {
+        "num_ur": int(num_ur),
+        "gender_rate": gender_rate
+    }
+    data['gender'] = gender
+
+# 统计转发微博用户认证比例
+    verified_count = 0
+    unVerified_count = 0
+    for i in range(num_ur):
+        if user.loc[i]['verified']:
+            verified_count += 1
+        elif not user.loc[i]['verified']:
+            unVerified_count += 1
+    verified_rate = {"认证": int(verified_count) / num_ur}
+    verified_rate.update({"非认证": int(unVerified_count) / num_ur})
+    verified = {
+        "verified_rate": verified_rate
+    }
+    data['verified'] = verified
+#用户粉丝数分布
+    followers_count = user['followers_count'].value_counts().sort_index()
+    sum1 = 0
+    sum2 = 0
+    sum3 = 0
+    sum4 = 0
+    sum5 = 0
+    for i in range(len(followers_count)):
+        if followers_count.index[i] < 50:
+            sum1 += followers_count.iloc[i]
+        elif followers_count.index[i] >= 50 and followers_count.index[i] < 150:
+            sum2 += followers_count.iloc[i]
+        elif followers_count.index[i] >= 150 and followers_count.index[i] < 300:
+            sum3 += followers_count.iloc[i]
+        elif followers_count.index[i] >= 300 and followers_count.index[i] < 500:
+            sum4 += followers_count.iloc[i]
+        elif followers_count.index[i] >= 500:
+            sum5 += followers_count.iloc[i]
+    followers_dic = {'50以下': int(sum1),
+                     '50-149': int(sum2),
+                     '150-299': int(sum3),
+                     '300-499': int(sum4),
+                     '500及以上': int(sum5)}
+    data['followers_dic'] = followers_dic
+#用户关注数分布
+    follow_count = user['follow_count'].value_counts().sort_index()
+    sum1 = 0
+    sum2 = 0
+    sum3 = 0
+    sum4 = 0
+    sum5 = 0
+    sum6 = 0
+    for i in range(len(follow_count)):
+        if follow_count.index[i] < 200:
+            sum1 += follow_count.iloc[i]
+        elif follow_count.index[i] >= 200 and follow_count.index[i] < 500:
+            sum2 += follow_count.iloc[i]
+        elif follow_count.index[i] >= 500 and follow_count.index[i] < 1000:
+            sum3 += follow_count.iloc[i]
+        elif follow_count.index[i] >= 1000 and follow_count.index[i] < 2000:
+            sum4 += follow_count.iloc[i]
+        elif follow_count.index[i] >= 2000 and follow_count.index[i] < 5000:
+            sum5 += follow_count.iloc[i]
+        elif follow_count.index[i] >= 5000:
+            sum6 += follow_count.iloc[i]
+    follow_dic = {'200以下': int(sum1),
+                  '200-499': int(sum2),
+                  '500-999': int(sum3),
+                  '1000-1999': int(sum4),
+                  '2000-4999': int(sum5),
+                  '5000及以上': int(sum6)}
+    data['follow_dic'] = follow_dic
+#用户微博数分布
+    statuses_count = user['statuses_count'].value_counts().sort_index()
+    sum1 = 0
+    sum2 = 0
+    sum3 = 0
+    sum4 = 0
+    sum5 = 0
+    sum6 = 0
+    for i in range(len(statuses_count)):
+        if statuses_count.index[i] < 500:
+            sum1 += statuses_count.iloc[i]
+        elif statuses_count.index[i] >= 500 and statuses_count.index[i] <= 1000:
+            sum2 += statuses_count.iloc[i]
+        elif statuses_count.index[i] >= 1000 and statuses_count.index[i] <= 3000:
+            sum3 += statuses_count.iloc[i]
+        elif statuses_count.index[i] >= 3000 and statuses_count.index[i] <= 5000:
+            sum4 += statuses_count.iloc[i]
+        elif statuses_count.index[i] >= 5000 and statuses_count.index[i] <= 10000:
+            sum5 += statuses_count.iloc[i]
+        elif statuses_count.index[i] >= 10000:
+            sum6 += statuses_count.iloc[i]
+    statuses_dic = {'500以下': int(sum1),
+                    '500-999': int(sum2),
+                    '1000-2999': int(sum3),
+                    '3000-4999': int(sum4),
+                    '5000-9999': int(sum5),
+                    '10000以上': int(sum6)}
+    data['statuses_dic'] = statuses_dic
+#用户所在地分布
+    province = []
+    for i in user['position']:
+        pos = i.split(' ')
+        province.append(pos[0])
+    province_list = pd.Series(province).value_counts()
+    data['province_list'] = province_list.to_dict()
+    data_json = json.dumps(data)
+    return render_template('urstatistic.html', data_json=data_json)
 
 
 # 微博转发结构页面数据
@@ -711,6 +906,28 @@ def senti_test():
     else:
         return render_template('single_sentiment.html')
 
+# 单条微博语句展示，以及情感极性测试
+@app.route('/singlewb_sentiment', methods=['GET', 'POST'])
+def sentiwb_test():
+    weibo = pd.read_csv(data_path + '/weibo.csv', encoding='utf-8')
+
+    global show_weibo_text
+    global senti_value
+    global content_err
+    if request.method == 'POST':
+        content = int(request.values.get('content_value'))
+        if content != '':
+            show_weibo_text=weibo.loc[content][2]
+            content_err = 1
+            senti_value = sen_value(clearTxt(show_weibo_text))
+        else:
+            senti_value = 0
+            content_err = 0
+        senti_value = json.dumps(senti_value)
+        content_err = json.dumps(content_err)
+        return render_template('singlewb_sentiment.html', senti_value=senti_value, content_err=content_err,show_weibo_text=show_weibo_text)
+    else:
+        return render_template('singlewb_sentiment.html')
 
 # 所有数据情感分析
 @app.route('/weibo_sentiment_analysis', methods=['GET', 'POST'])
@@ -769,7 +986,6 @@ def sentiment_analysis_detail():
                                user_position_senticount=user_position_senticount,
                                user_timeciyun_path=user_timeciyun_path,
                                user_positionciyun_path=user_positionciyun_path)
-
 
 #
 if __name__ == '__main__':

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../static/layui/css/layui.css">
+</head>
+<body style="height: 100%; margin: 0">
+<div id="container1" style="height: 50%;position: relative">
+	<div id="chart1" style="width: 95%; height: 100%;position: absolute;left:2.5%;border-bottom: 1px solid #b2b2b2;">chart1</div>
+</div>
+<div id="container2" style="height: 50% ;">
+	<div id="chart2" style="width: 58%; height: 160%; float: left;border-right: 1px solid #b2b2b2">chart2</div>
+	<div id="chart3" style="width: 40%; height: 100%; float: left;">
+		<div id="chart3-1" style="width: 100%; height: 80%; ">chart3-1</div>
+		<div id="chart3-2" style="width: 100%; height: 80%; ">chart3-2</div>
+	</div>
+</div>
+<script type="text/javascript" src="/static/js/echarts.js"></script>
+<script type="text/javascript" src="/static/js/china.js"></script>
+<script type="text/javascript">
+
+	var data = {{ data_json | tojson}};   //接收来自后端的数据
+	data = JSON.parse(data);              //将数据解析为json格式
+    var source = data.source;
+	var verified = data.verified;		  //认证比例
+	var verified_rate = verified.verified_rate;
+	var gender = data.gender;             //性别比例
+	var gender_rate = gender.gender_rate;
+	var followers_dic = data.followers_dic;//粉丝数分布
+	var follow_dic = data.follow_dic;//关注数分布
+	var statuses_dic = data.statuses_dic;//微博数分布
+	var province_list = data.province_list;//微博数分布
+
+	<!--粉丝数关注数微博数分布-->
+	var usercountDom = document.getElementById("chart1");
+	var usercountChart = echarts.init(usercountDom);
+	usercountoption = {
+    title: [{
+        text: '用户关注量粉丝量微博数量分布',
+		left: '5.8%'
+    }, {
+        subtext: '用户粉丝量',
+        left: '16.67%',
+        top: '75%',
+        textAlign: 'center'
+    }, {
+        subtext: '用户关注量',
+        left: '50%',
+        top: '75%',
+        textAlign: 'center'
+    }, {
+        subtext: '用户微博数量',
+        left: '83.33%',
+        top: '75%',
+        textAlign: 'center'
+    }],
+    series: [{
+        type: 'pie',
+        radius: '40%',
+        center: ['20%', '50%'],
+       data: Object.keys(followers_dic).map(function (key)
+	   {
+   			return {
+      			name: key,
+      			value: followers_dic[key]
+   				}
+		}),
+        animation: false,
+        label: {
+            position: 'outer',
+            alignTo: 'none',
+            bleedMargin: 5
+        },
+        left: 0,
+        right: '66.6667%',
+        top: 0,
+        bottom: 0
+    }, {
+        type: 'pie',
+        radius: '40%',
+        center: ['50%', '50%'],
+        data: Object.keys(follow_dic).map(function (key)
+		{
+        	return {
+      				name: key,
+      				value: follow_dic[key]
+   					}
+		}),
+        animation: false,
+        label: {
+            position: 'outer',
+            alignTo: 'labelLine',
+            bleedMargin: 5
+        },
+        left: '33.3333%',
+        right: '33.3333%',
+        top: 0,
+        bottom: 0
+    }, {
+        type: 'pie',
+        radius: '40%',
+        center: ['80%', '50%'],
+        data: Object.keys(statuses_dic).map(function (key)
+		{
+   			return {
+      			name: key,
+				value: statuses_dic[key]
+   					}
+		}),
+        animation: false,
+        label: {
+            position: 'outer',
+            alignTo: 'edge',
+            margin: 20
+        },
+        left: '66.6667%',
+        right: 0,
+        top: 0,
+        bottom: 0
+    }]
+};
+	usercountChart.setOption(usercountoption)   //根据option里的内容展示图表
+
+	<!--地图-->
+	var provinceRatioDom = document.getElementById("chart2");   //获取要加入内容的容器
+	var provinceRatioChart = echarts.init(provinceRatioDom);
+	var provinceRatioOption = {
+		title: [{
+        text: '用户地区分布',
+		left: '10%',
+			top:'2.5%'
+    	}, ],
+    tooltip: {
+        show: true,
+        formatter: function(params) {
+            return params.name + '：' + params.value
+        },
+    },
+    visualMap: {
+        type: 'piecewise',
+        pieces: [{
+                min: 500,
+                color: '#73240D'
+            },
+            {
+                min: 300,
+                max: 500,
+                color: '#BB0000'
+            },
+            {
+                min: 200,
+                max: 300,
+                color: '#BD430A'
+            },
+            {
+                min: 100,
+                max: 200,
+                color: '#E08150'
+            },
+            {
+                min: 50,
+                max: 100,
+                color: '#E9B090'
+            },
+            {
+                min: 0,
+                max: 50,
+                color: '#F2DDD2'
+            }
+        ],
+        orient: 'vertical',
+        itemSymbol: 'circle',
+        itemWidth: 20,
+        itemHeight: 20,
+        showLabel: true,
+        seriesIndex: [0],
+        textStyle: {
+            color: '#7B93A7'
+        },
+        bottom: '10%',
+        left: "5%",
+    },
+    grid: {
+        right: '5%',
+        top: '20%',
+        bottom: '10%',
+        width: '20%'
+    },
+    xAxis: {
+        min: 0,
+        max: 4000,
+        show: false
+    },
+    yAxis: {
+        inverse: true,
+        offset: '2',
+        'type': 'category',
+        axisTick: {
+            show: false,
+        },
+        axisLabel: {
+            textStyle: {
+                fontSize: 14,
+                color: '#000000',
+            },
+            interval: 0
+        },
+        axisLine: {
+            show: false
+        },
+        splitLine: {
+            show: false
+        },
+    },
+    geo: {
+        map: 'china',
+        right: '5%',
+        left: '20%',
+        label: {
+            emphasis: {
+                show: false,
+            }
+        },
+        itemStyle: {
+            emphasis: {
+                areaColor: '#4682B4'
+            }
+        }
+    },
+    series: [{
+            name: 'mapSer',
+            type: 'map',
+            map: 'china',
+            roam: false,
+            geoIndex: 0,
+            label: {
+                show: false,
+            },
+            data: [
+                        {name: '北京',value:province_list['北京']},
+                        {name: '天津',value:province_list['天津']},
+                        {name: '上海',value:province_list['上海']},
+                        {name: '重庆',value:province_list['重庆']},
+                        {name: '河北',value:province_list['河北']},
+                        {name: '河南',value:province_list['河南']},
+                        {name: '云南',value:province_list['云南']},
+                        {name: '辽宁',value:province_list['辽宁']},
+                        {name: '黑龙江',value:province_list['黑龙江']},
+                        {name: '湖南',value:province_list['湖南']},
+                        {name: '安徽',value:province_list['安徽']},
+                        {name: '山东',value:province_list['山东']},
+                        {name: '新疆',value:province_list['新疆']},
+                        {name: '江苏',value:province_list['江苏']},
+                        {name: '浙江',value:province_list['浙江']},
+                        {name: '江西',value:province_list['江西']},
+                        {name: '湖北',value:province_list['湖北']},
+                        {name: '广西',value:province_list['广西']},
+                        {name: '甘肃',value:province_list['甘肃']},
+                        {name: '山西',value:province_list['山西']},
+                        {name: '内蒙古',value:province_list['内蒙古']},
+                        {name: '陕西',value:province_list['陕西']},
+                        {name: '吉林',value:province_list['吉林']},
+                        {name: '福建',value:province_list['福建']},
+                        {name: '贵州',value:province_list['贵州']},
+                        {name: '广东',value:province_list['广东']},
+                        {name: '青海',value:province_list['青海']},
+                        {name: '西藏',value:province_list['西藏']},
+                        {name: '四川',value:province_list['四川']},
+                        {name: '宁夏',value:province_list['宁夏']},
+                        {name: '海南',value:province_list['海南']},
+                        {name: '台湾',value:province_list['台湾']},
+                        {name: '香港',value:province_list['香港']},
+                        {name: '澳门',value:province_list['澳门']}
+                    ]
+        }
+    ]
+};
+	provinceRatioChart.setOption(provinceRatioOption)   //根据option里的内容展示图表
+
+	<!--性别比例-->
+	var sexRatioDom = document.getElementById("chart3-1");
+	var sexRatioChart = echarts.init(sexRatioDom);
+	sexRatioOption = {
+                title : {
+                    text: '性别比例',
+                    //subtext: '纯属虚构',
+                    left: '10%',
+					top:'5%'
+
+                },
+				grid: {
+					left:'20%'
+				},
+                label:{
+                    normal:{
+                        show: true,
+                        textStyle:{color:'#000',fontSize:"18"},
+                        position: 'top'
+                    },
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                xAxis: {
+                    type: 'value',
+                    show: true,
+                    axisLabel: {
+                        textStyle: {
+                            color: '#000',
+                            fontSize:'14'
+                        },
+                         formatter:function(val){
+                            var newval =val/10000;
+                            return val+ "%";
+                         },
+                    }
+                },
+                yAxis: {
+                    type: 'category',
+                    nameLocation:"left",
+                    axisTick:false,
+                    data:  ["男","女"].reverse(),
+                    splitLine: {
+                        show: false
+                    },
+                    axisLabel: {
+                        interval: 0,
+                        rotate: 20
+                    },
+                },
+                series: [{
+                    name: '占比',
+                    type: 'bar',
+                    data: Object.keys(gender_rate).map(function (key) {
+                        return (gender_rate[key]*100).toFixed(0);
+                    }),
+                    barWidth: 20,
+                    label: {
+                        normal: {
+                            show: true,
+                            position: 'right',
+                            offset: [5, -2],
+                            textStyle: {
+                                color: '#000',
+                                fontSize: 14
+                            },
+                            formatter:function({data}){
+                                return data+ "%";
+                            },
+                        }
+                    },
+                    itemStyle: {
+                        normal: {
+							color: function(params) {
+                        // build a color map as your need.
+                        var colorList = [
+                            {
+                                colorStops: [{
+                                    offset: 0,
+                                    color: '#00C0FA' // 0% 处的颜色
+                                }, {
+                                    offset: 1,
+                                    color: '#2F95FA' // 100% 处的颜色
+                                }]
+                            }
+                        ];
+                        return colorList[0];
+                    },
+							barBorderRadius: 5,
+                        }
+                    }
+                }]
+
+            };
+	sexRatioChart.setOption(sexRatioOption)   //根据option里的内容展示图表
+
+	 <!--认证比例-->
+	var certificationRatioDom = document.getElementById("chart3-2");
+	var certificationRatioChart = echarts.init(certificationRatioDom);
+	certificationOption = {
+                title : {
+                    text: '认证比例',
+                    left: '10%',
+					top:'2.5%'
+                },
+				grid: {
+					left:'20%'
+				},
+                label:{
+                    normal:{
+                        show: true,
+                        textStyle:{color:'#000000',fontSize:"18"},
+                        position: 'top'
+                    },
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                xAxis: {
+                    type: 'value',
+                    axisLabel: {
+                        textStyle: {
+                            color: '#000',
+                            fontSize:'14'
+                        },
+                        formatter:function(val){
+                            var newval =val/10000;
+                            return val+ "%";
+                        },
+                    }
+                },
+                yAxis: {
+                    type: 'category',
+                    nameLocation:"left",
+                    axisTick:false,
+                    data:  ["非认证","认证"].reverse(),
+                    splitLine: {
+                        show: false
+                    },
+                    axisLabel: {
+                        interval: 0,
+                        rotate: 20
+                    },
+                },
+                series: [{
+                    name: '占比',
+                    type: 'bar',
+                    data: Object.keys(verified_rate).map(function (key) {
+                        return (verified_rate[key]*100).toFixed(0);
+                    }),
+                    barWidth: 20,
+                    label: {
+                        normal: {
+                            show: true,
+                            position: 'right',
+                            offset: [5, -2],
+                            textStyle: {
+                                color: '#000',
+                                fontSize: 14
+                            },
+                            formatter:function({data}){
+                                return data+ "%";
+                            },
+                        }
+                    },
+                    itemStyle: {
+                	normal: {
+                    color: function(params) {
+                        // build a color map as your need.
+                        var colorList = [
+                            {
+                                colorStops: [{
+                                    offset: 0,
+                                    color: '#00C0FA' // 0% 处的颜色
+                                }, {
+                                    offset: 1,
+                                    color: '#2F95FA' // 100% 处的颜色
+                                }]
+                            }
+                        ];
+                        return colorList[0];
+                    },
+						barBorderRadius: 5,
+                }
+            }
+                }]
+
+            };
+	certificationRatioChart.setOption(certificationOption)   //根据option里的内容展示图表
+
+</script>
+</body>
+</html>

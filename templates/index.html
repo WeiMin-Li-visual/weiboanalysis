@@ -34,6 +34,7 @@
 		          <a class="" href="javascript:;">微博数据分析</a>
 		          <dl class="layui-nav-child">
 		            <dd><a onclick="skipto('wbstatistic')" style="cursor:pointer">微博统计</a></dd>
+                      <dd><a onclick="skipto('urstatistic')" style="cursor:pointer">用户统计</a></dd>
 				  </dl>
 		        </li>
 		        <li class="layui-nav-item">
@@ -46,6 +47,7 @@
 		          <a href="javascript:;">微博情感分析</a>
 					<dl class="layui-nav-child" style="font-size: 19px;">
 		             <dd><a  onclick="skipto('single_sentiment')" style="cursor:pointer">单条情感分析</a></dd>
+					 <dd><a  onclick="skipto('singlewb_sentiment')" style="cursor:pointer">单条微博情感分析</a></dd>
 						<a href="javascript:;">数据情感分析</a>
 						<dl class="layui-nav-child" style="font-size: 15px;">
 					  		<dd><a onclick="skipto('weibo_sentiment_analysis')" style="cursor:pointer" href="javascript:;">整体分析</a></dd>
@@ -83,6 +85,7 @@
 			}
 			ifr.src = 'http://127.0.0.1:5000/' + target;
 		}
+
 		</script>
 	</body>
 </html>
