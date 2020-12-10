@@ -583,13 +583,9 @@ def wb_statistic():
     data['year_count'] = year_count.to_dict()
 
      # 转发微博占比
-    repo_count = 0
-    post_count = 0
-    for i in range(num_wb):
-        if not pd.isnull(weibo.loc[i]['retweeted_status']):
-            repo_count += 1
-        elif pd.isnull(weibo.loc[i]['retweeted_status']):
-            post_count += 1
+    repo_count = sum(weibo.loc[:, 'retweeted_status'].isnull() == True)
+    post_count = sum(weibo.loc[:, 'retweeted_status'].isnull() == False)
+
     repost_rate = {"转发微博": int(repo_count)}
     repost_rate.update({"原创微博": int(post_count)})
     data['repost_rate'] = repost_rate
