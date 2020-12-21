@@ -57,7 +57,7 @@
     series: [{
         type: 'pie',
         radius: '40%',
-        center: ['20%', '50%'],
+        center: ['16.67%', '50%'],
        data: Object.keys(followers_dic).map(function (key)
 	   {
    			return {
@@ -99,7 +99,7 @@
     }, {
         type: 'pie',
         radius: '40%',
-        center: ['80%', '50%'],
+        center: ['83.33%', '50%'],
         data: Object.keys(statuses_dic).map(function (key)
 		{
    			return {
@@ -139,32 +139,31 @@
     visualMap: {
         type: 'piecewise',
         pieces: [{
-                min: 500,
+                min: 5000,
                 color: '#73240D'
             },
             {
-                min: 300,
-                max: 500,
+                min: 3000,
+                max: 5000,
                 color: '#BB0000'
             },
             {
-                min: 200,
-                max: 300,
+                min: 2000,
+                max: 3000,
                 color: '#BD430A'
             },
             {
-                min: 100,
-                max: 200,
+                min: 1000,
+                max: 2000,
                 color: '#E08150'
             },
             {
-                min: 50,
-                max: 100,
+                min: 500,
+                max: 1000,
                 color: '#E9B090'
             },
-            {
-                min: 0,
-                max: 50,
+			{
+                max: 1000,
                 color: '#F2DDD2'
             }
         ],

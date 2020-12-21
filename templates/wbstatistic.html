@@ -6,8 +6,8 @@
 </head>
 <body style="height: 100%; margin: 0">
 <div id="container1" style="height: 70%; border-bottom: 1px solid #b2b2b2;">
-	<div id="chart1" style="width: 58%; height: 100%; float: left;">chart1</div>
-	<div id="chart2" style="width: 41%; height: 100%; float: left; border-left: 1px solid #b2b2b2;">chart2</div>
+	<div id="chart1" style="width: 55%; height: 100%; float: left;">chart1</div>
+	<div id="chart2" style="width: 44%; height: 100%; float: left; border-left: 1px solid #b2b2b2;">chart2</div>
 </div>
 
 <div id="comtainer2" style="height: 60%">
@@ -45,7 +45,7 @@
 	    }],
 	    grid: [{
 	        bottom: '1%',
-	        left: 10,
+	        left: 20,
 	        containLabel: true
 	    }],
 	    xAxis: [{
@@ -116,6 +116,12 @@
 		tooltip: {
 			trigger: 'axis'
 		},
+		grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+		},
 		xAxis:[{
 			type:'category',
 			data: Object.keys(year_count),
@@ -135,6 +141,7 @@
 	                show: true
 	            }
 	        },
+			barWidth: 40,
 			data: Object.keys(year_count).map(function (key) {
 				return year_count[key]
 			})

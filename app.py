@@ -26,13 +26,12 @@ data_path_cache = 'static/data/weibo/analysis_cache'
 
 def load_wb_data(path):
     weibo = pd.read_csv(path)
-    weibo['user'] = weibo['user'].map(eval)  # 将读取到的str数据转为dict类型
+    #weibo['user'] = weibo['user'].map(eval)  # 将读取到的str数据转为dict类型
     num_wb = len(weibo)
     return weibo, num_wb
 
 def load_ur_data(path):
     user = pd.read_csv(path)
-    # weibo['user'] = weibo['user'].map(eval)  # 将读取到的str数据转为dict类型
     num_ur = len(user)
     return user, num_ur
 
@@ -531,7 +530,7 @@ def senti_diffusion_position():
 app = Flask(__name__)
 app.secret_key = 'lisenzzz'
 weibo, num_wb = load_wb_data('static/data/weibo/weibo.csv')
-user, num_ur = load_ur_data('static/data/weibo/user.csv')
+user, num_ur = load_ur_data('static/data/weibo/userInfo.csv')
 repost = Repost('static/data/weibo/repost.csv')
 
 
@@ -573,13 +572,8 @@ def wb_statistic():
     years = []
     for i in weibo['created_at']:
         date = i.split('-')
-        years.append(date[0])
+        years.append(date[1])
     year_count = pd.Series(years).value_counts().sort_index(ascending=False)
-    '''year_count = {}
-    for i in range(len(year_list)):
-        year = year_list.index[i]
-        num = year_list[i]
-        year_count.update({year: int(num)})'''
     data['year_count'] = year_count.to_dict()
 
      # 转发微博占比
@@ -700,24 +694,24 @@ def ur_statistic():
     sum5 = 0
     sum6 = 0
     for i in range(len(follow_count)):
-        if follow_count.index[i] < 200:
+        if follow_count.index[i] < 100:
             sum1 += follow_count.iloc[i]
-        elif follow_count.index[i] >= 200 and follow_count.index[i] < 500:
+        elif follow_count.index[i] >= 100 and follow_count.index[i] < 300:
             sum2 += follow_count.iloc[i]
-        elif follow_count.index[i] >= 500 and follow_count.index[i] < 1000:
+        elif follow_count.index[i] >= 300 and follow_count.index[i] < 500:
             sum3 += follow_count.iloc[i]
-        elif follow_count.index[i] >= 1000 and follow_count.index[i] < 2000:
+        elif follow_count.index[i] >= 500 and follow_count.index[i] < 800:
             sum4 += follow_count.iloc[i]
-        elif follow_count.index[i] >= 2000 and follow_count.index[i] < 5000:
+        elif follow_count.index[i] >= 800 and follow_count.index[i] < 1000:
             sum5 += follow_count.iloc[i]
-        elif follow_count.index[i] >= 5000:
+        elif follow_count.index[i] >= 1000:
             sum6 += follow_count.iloc[i]
-    follow_dic = {'200以下': int(sum1),
-                  '200-499': int(sum2),
-                  '500-999': int(sum3),
-                  '1000-1999': int(sum4),
-                  '2000-4999': int(sum5),
-                  '5000及以上': int(sum6)}
+    follow_dic = {'100以下': int(sum1),
+                  '100-299': int(sum2),
+                  '300-499': int(sum3),
+                  '500-799': int(sum4),
+                  '800-999': int(sum5),
+                  '1000及以上': int(sum6)}
     data['follow_dic'] = follow_dic
 #用户微博数分布
     statuses_count = user['statuses_count'].value_counts().sort_index()
